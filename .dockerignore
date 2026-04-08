@@ -1,0 +1,11 @@
+node_modules
+*/node_modules
+client/dist
+server/fabric.db
+server/fabric.db-shm
+server/fabric.db-wal
+data/
+.git
+*.bat
+*.md
+ecosystem.config.js

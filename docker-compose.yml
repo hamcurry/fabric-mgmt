@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: fabric-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/app/data/fabric.db
+    volumes:
+      - ./data:/app/data
+    networks:
+      - fabric-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/fabrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: fabric-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - fabric-net
+
+networks:
+  fabric-net:
+    driver: bridge
+
+volumes:
+  fabric-data:

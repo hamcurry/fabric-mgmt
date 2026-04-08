@@ -1,0 +1,41 @@
+version: '3.9'
+
+# VPS 部署用 — 直接拉取 ghcr.io 预构建镜像，无需源码
+# 使用前替换 YOUR_GITHUB_USERNAME 为你的 GitHub 用户名（小写）
+# 启动命令: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    image: ghcr.io/hamcurry/fabric-backend:latest
+    container_name: fabric-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/app/data/fabric.db
+    volumes:
+      - ./data:/app/data
+    networks:
+      - fabric-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/fabrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: ghcr.io/hamcurry/fabric-frontend:latest
+    container_name: fabric-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - fabric-net
+
+networks:
+  fabric-net:
+    driver: bridge

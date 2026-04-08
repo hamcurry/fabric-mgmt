@@ -1,0 +1,15 @@
+FROM node:20-alpine
+WORKDIR /app
+
+# 安装依赖（利用层缓存）
+COPY server/package*.json ./
+RUN npm ci --omit=dev
+
+# 复制源码
+COPY server/ .
+
+# 数据目录（SQLite 持久化卷挂载点）
+RUN mkdir -p /app/data
+
+EXPOSE 3000
+CMD ["node", "index.js"]
