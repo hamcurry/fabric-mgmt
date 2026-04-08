@@ -11,7 +11,8 @@ const routes = [
   { path: '/stock/out', component: () => import('../views/StockOut.vue'), meta: { titleKey: 'nav.stock_out', descKey: 'nav.stock_out_desc' } },
   { path: '/inventory', component: () => import('../views/Inventory.vue'), meta: { titleKey: 'nav.inventory', descKey: 'nav.inventory_desc' } },
   { path: '/timeline', component: () => import('../views/Timeline.vue'), meta: { titleKey: 'nav.timeline', descKey: 'nav.timeline_desc' } },
-  { path: '/reports', component: () => import('../views/Reports.vue'), meta: { titleKey: 'nav.reports', descKey: 'nav.reports_desc' } }
+  { path: '/reports', component: () => import('../views/Reports.vue'), meta: { titleKey: 'nav.reports', descKey: 'nav.reports_desc' } },
+  { path: '/backup', component: () => import('../views/Backup.vue'), meta: { titleKey: 'nav.backup', descKey: 'nav.backup_desc' } }
 ]
 
 export default createRouter({

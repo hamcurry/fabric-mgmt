@@ -16,7 +16,8 @@ export default {
     inventory: 'Inventory', inventory_desc: 'View current stock levels for all fabrics',
     timeline: 'Timeline', timeline_desc: 'All operation records and history',
     reports: 'Reports', reports_desc: 'Export inventory reports to Excel',
-    warehouse: 'Warehouse'
+    warehouse: 'Warehouse',
+    backup: 'Backup', backup_desc: 'Backup and restore the database'
   },
   common: {
     save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add',
@@ -172,5 +173,22 @@ export default {
     associate_style: 'Style',
     delete_confirm: 'This will roll back stock. Confirm?',
     delete_success: 'Deleted and stock rolled back'
+  },
+  backup: {
+    title: 'Backup & Restore',
+    download_title: 'Download Backup',
+    download_desc: 'Export the current database as a .db file. Save it locally as a regular backup.',
+    download_btn: 'Download Backup',
+    restore_title: 'Restore Data',
+    restore_desc: 'Restore data from a backup file. The service will restart automatically (~5-10 s) — refresh the page after.',
+    restore_warning: 'Restoring will overwrite all current data. This cannot be undone!',
+    select_file: 'Select backup file (.db)',
+    restore_btn: 'Restore',
+    confirm_title: 'Confirm Restore?',
+    confirm_msg: 'This will overwrite all current data with the selected backup. It cannot be undone. The service will restart after restoring.',
+    confirm_btn: 'Overwrite & Restore',
+    success: 'Restore successful. Service is restarting — please refresh the page in a moment…',
+    invalid_file: 'The selected file is not a valid SQLite database',
+    select_first: 'Please select a backup file first'
   }
 }

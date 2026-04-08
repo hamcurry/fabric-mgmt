@@ -1,8 +1,11 @@
 <template>
   <el-config-provider :locale="epLocale">
+    <!-- Mobile sidebar overlay -->
+    <div v-if="sidebarOpen" class="sidebar-overlay" @click="sidebarOpen = false" />
+
     <div class="shell">
       <!-- ── Sidebar ── -->
-      <aside class="sidebar">
+      <aside class="sidebar" :class="{ 'sidebar-open': sidebarOpen }">
         <!-- Brand -->
         <div class="brand">
           <div class="brand-logo">
@@ -18,28 +21,28 @@
 
         <!-- Nav -->
         <nav class="nav">
-          <router-link to="/dashboard" class="nav-item" :class="{ active: $route.path === '/dashboard' }">
+          <router-link to="/dashboard" class="nav-item" :class="{ active: $route.path === '/dashboard' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10.707 2.293a1 1 0 0 0-1.414 0l-7 7a1 1 0 0 0 1.414 1.414L4 10.414V17a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-6.586l.293.293a1 1 0 0 0 1.414-1.414l-7-7z"/>
             </svg>
             <span>{{ $t('nav.dashboard') }}</span>
           </router-link>
 
-          <router-link to="/fabrics" class="nav-item" :class="{ active: $route.path === '/fabrics' }">
+          <router-link to="/fabrics" class="nav-item" :class="{ active: $route.path === '/fabrics' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M3 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1z" clip-rule="evenodd"/>
             </svg>
             <span>{{ $t('nav.fabrics') }}</span>
           </router-link>
 
-          <router-link to="/styles" class="nav-item" :class="{ active: $route.path.startsWith('/styles') }">
+          <router-link to="/styles" class="nav-item" :class="{ active: $route.path.startsWith('/styles') }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
             </svg>
             <span>{{ $t('nav.styles') }}</span>
           </router-link>
 
-          <router-link to="/calc" class="nav-item" :class="{ active: $route.path === '/calc' }">
+          <router-link to="/calc" class="nav-item" :class="{ active: $route.path === '/calc' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm4-4a1 1 0 100 2h.01a1 1 0 100-2H13zM9 9a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zM7 8a1 1 0 000 2h.01a1 1 0 000-2H7z" clip-rule="evenodd"/>
             </svg>
@@ -48,14 +51,14 @@
 
           <div class="nav-section-label">{{ $t('nav.warehouse') }}</div>
 
-          <router-link to="/stock/in" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/in' }">
+          <router-link to="/stock/in" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/in' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
             </svg>
             <span>{{ $t('nav.stock_in') }}</span>
           </router-link>
 
-          <router-link to="/stock/out" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/out' }">
+          <router-link to="/stock/out" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/out' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/>
             </svg>
@@ -64,25 +67,33 @@
 
           <div class="nav-divider"></div>
 
-          <router-link to="/inventory" class="nav-item" :class="{ active: $route.path === '/inventory' }">
+          <router-link to="/inventory" class="nav-item" :class="{ active: $route.path === '/inventory' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
             </svg>
             <span>{{ $t('nav.inventory') }}</span>
           </router-link>
 
-          <router-link to="/timeline" class="nav-item" :class="{ active: $route.path === '/timeline' }">
+          <router-link to="/timeline" class="nav-item" :class="{ active: $route.path === '/timeline' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
             </svg>
             <span>{{ $t('nav.timeline') }}</span>
           </router-link>
 
-          <router-link to="/reports" class="nav-item" :class="{ active: $route.path === '/reports' }">
+          <router-link to="/reports" class="nav-item" :class="{ active: $route.path === '/reports' }" @click="closeSidebar">
             <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
             </svg>
             <span>{{ $t('nav.reports') }}</span>
+          </router-link>
+
+          <router-link to="/backup" class="nav-item" :class="{ active: $route.path === '/backup' }" @click="closeSidebar">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+              <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 000 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ $t('nav.backup') }}</span>
           </router-link>
         </nav>
 
@@ -109,6 +120,12 @@
       <!-- ── Main ── -->
       <div class="main">
         <header class="topbar">
+          <!-- Mobile hamburger -->
+          <button class="topbar-menu-btn" @click="sidebarOpen = !sidebarOpen" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </button>
           <div class="topbar-title">{{ $route.meta.titleKey ? $t($route.meta.titleKey) : $t('app.title') }}</div>
           <div class="topbar-breadcrumb">{{ $route.meta.descKey ? $t($route.meta.descKey) : '' }}</div>
         </header>
@@ -131,6 +148,9 @@ const { locale } = useI18n()
 const epLocale = computed(() => locale.value === 'zh' ? zhCn : en)
 
 const isDark = ref(localStorage.getItem('theme') === 'dark')
+const sidebarOpen = ref(false)
+
+const closeSidebar = () => { sidebarOpen.value = false }
 
 const toggleTheme = () => {
   isDark.value = !isDark.value
@@ -158,6 +178,15 @@ onMounted(() => {
   height: 100vh;
   overflow: hidden;
   background: var(--color-bg-app);
+}
+
+/* ── Sidebar overlay (mobile) ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-overlay);
+  z-index: 99;
 }
 
 /* ── Sidebar ── */
@@ -333,6 +362,21 @@ onMounted(() => {
   padding: 0 32px;
   gap: 12px;
 }
+.topbar-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-base);
+  padding: 0;
+}
+.topbar-menu-btn:hover { background: var(--color-border); }
 .topbar-title {
   font-size: 15px;
   font-weight: 700;
@@ -349,5 +393,30 @@ onMounted(() => {
   overflow-y: auto;
   padding: 28px 32px;
   background: var(--color-bg-app);
+}
+
+/* ══ Mobile Responsive ══ */
+@media (max-width: 768px) {
+  .sidebar-overlay { display: block; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform var(--dur-normal) var(--ease-standard);
+    box-shadow: var(--shadow-xl);
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .topbar-menu-btn { display: flex; }
+  .topbar { padding: 0 16px; gap: 10px; }
+  .topbar-breadcrumb { display: none; }
+
+  .content { padding: 16px; }
 }
 </style>

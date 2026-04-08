@@ -14,6 +14,7 @@ app.use('/api/calc',     require('./routes/calc'))
 app.use('/api/timeline', require('./routes/timeline'))
 app.use('/api/reports',  require('./routes/reports'))
 app.use('/api/export',   require('./routes/export'))
+app.use('/api/backup',   require('./routes/backup'))
 
 // 托管前端构建产物（生产模式 / PM2 模式）
 const distPath = path.join(__dirname, '../client/dist')

@@ -478,3 +478,25 @@ body {
 [data-theme="dark"] .el-table__row:hover td {
   background: rgba(255,255,255,0.04) !important;
 }
+
+/* ═══════════════════════════════════════════════
+   Mobile Responsive Overrides
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+
+  /* Cards: reduce padding */
+  .el-card__header { padding: var(--space-3) var(--space-4) !important; }
+  .el-card__body  { padding: var(--space-3) var(--space-4) !important; }
+
+  /* Tables: smaller text */
+  .el-table { font-size: 12px !important; }
+  .el-table th.el-table__cell { font-size: 10.5px !important; padding: 8px 10px !important; }
+  .el-table td.el-table__cell { padding: 8px 10px !important; }
+
+  /* Dialogs: full-width */
+  .el-dialog { width: 94vw !important; margin: 0 auto !important; }
+  .el-dialog__header { padding: var(--space-4) var(--space-4) var(--space-2) !important; }
+  .el-dialog__body   { padding: var(--space-2) var(--space-4) !important; }
+  .el-dialog__footer { padding: var(--space-2) var(--space-4) var(--space-4) !important; }
+}

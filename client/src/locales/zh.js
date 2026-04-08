@@ -16,7 +16,8 @@ export default {
     inventory: '库存总览', inventory_desc: '查看全部面料当前库存状态',
     timeline: '全局时间线', timeline_desc: '所有操作记录与历史流水',
     reports: '报表导出', reports_desc: '导出库存报表为 Excel 文件',
-    warehouse: '仓库操作'
+    warehouse: '仓库操作',
+    backup: '备份还原', backup_desc: '备份与恢复数据库'
   },
   common: {
     save: '保存', cancel: '取消', delete: '删除', edit: '编辑', add: '新增',
@@ -172,5 +173,22 @@ export default {
     associate_style: '关联款式',
     delete_confirm: '删除后将同步回滚库存，确认？',
     delete_success: '已删除，库存已回滚'
+  },
+  backup: {
+    title: '备份与还原',
+    download_title: '下载备份',
+    download_desc: '将当前数据库导出为 .db 文件，建议定期备份保存到本地。',
+    download_btn: '下载备份文件',
+    restore_title: '还原数据',
+    restore_desc: '从备份文件还原数据。还原后服务将自动重启（约 5-10 秒），页面需手动刷新。',
+    restore_warning: '还原将覆盖全部现有数据，操作不可撤销！',
+    select_file: '选择备份文件 (.db)',
+    restore_btn: '确认还原',
+    confirm_title: '确认还原数据？',
+    confirm_msg: '此操作将用所选备份文件覆盖当前全部数据，不可撤销。服务将在还原后自动重启。',
+    confirm_btn: '确认覆盖',
+    success: '还原成功，服务即将重启，请稍后刷新页面…',
+    invalid_file: '所选文件不是有效的 SQLite 数据库',
+    select_first: '请先选择备份文件'
   }
 }
