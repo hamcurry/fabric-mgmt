@@ -58,7 +58,7 @@ mkdir -p data
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-访问 `http://服务器IP`
+访问 `http://服务器IP:7737`
 
 **更新到最新版本：**
 ```bash
@@ -210,7 +210,7 @@ mkdir -p data
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-Visit `http://YOUR_SERVER_IP`
+Visit `http://YOUR_SERVER_IP:7737`
 
 **Update to latest version:**
 ```bash
