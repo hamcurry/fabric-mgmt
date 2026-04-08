@@ -1,16 +1,14 @@
 <template>
   <div>
-    <!-- 预警提示条 -->
     <el-alert
       v-if="alerts.length"
-      :title="`${alerts.length} 种面料库存低于预警阈值，请及时补货`"
+      :title="$t('dashboard.alert_msg', { count: alerts.length })"
       type="warning"
       :closable="false"
       show-icon
       style="margin-bottom:20px"
     />
 
-    <!-- 统计卡片 -->
     <div class="stat-grid">
       <div v-for="stat in stats" :key="stat.label" class="stat-card">
         <div class="stat-label">{{ stat.label }}</div>
@@ -21,62 +19,60 @@
       </div>
     </div>
 
-    <!-- 快捷操作 -->
     <el-card shadow="never" style="margin-bottom:20px">
-      <template #header><b>快捷操作</b></template>
+      <template #header><b>{{ $t('dashboard.quick_ops') }}</b></template>
       <div class="quick-grid">
         <button class="quick-btn quick-btn--primary" @click="$router.push('/calc')">
           <div class="quick-btn-icon">⚖</div>
           <div>
-            <div class="quick-btn-title">用量计算</div>
-            <div class="quick-btn-sub">按件数计算所需面料</div>
+            <div class="quick-btn-title">{{ $t('dashboard.calc_title') }}</div>
+            <div class="quick-btn-sub">{{ $t('dashboard.calc_desc') }}</div>
           </div>
         </button>
         <button class="quick-btn quick-btn--success" @click="$router.push('/stock/in')">
           <div class="quick-btn-icon">↓</div>
           <div>
-            <div class="quick-btn-title">面料入库</div>
-            <div class="quick-btn-sub">记录新到货面料</div>
+            <div class="quick-btn-title">{{ $t('dashboard.stock_in_title') }}</div>
+            <div class="quick-btn-sub">{{ $t('dashboard.stock_in_desc') }}</div>
           </div>
         </button>
         <button class="quick-btn quick-btn--warning" @click="$router.push('/stock/out')">
           <div class="quick-btn-icon">↑</div>
           <div>
-            <div class="quick-btn-title">面料出库</div>
-            <div class="quick-btn-sub">关联款式出库扣减</div>
+            <div class="quick-btn-title">{{ $t('dashboard.stock_out_title') }}</div>
+            <div class="quick-btn-sub">{{ $t('dashboard.stock_out_desc') }}</div>
           </div>
         </button>
         <button class="quick-btn quick-btn--neutral" @click="$router.push('/styles')">
           <div class="quick-btn-icon">＋</div>
           <div>
-            <div class="quick-btn-title">新建款式</div>
-            <div class="quick-btn-sub">录入款式面料用量</div>
+            <div class="quick-btn-title">{{ $t('dashboard.new_style_title') }}</div>
+            <div class="quick-btn-sub">{{ $t('dashboard.new_style_desc') }}</div>
           </div>
         </button>
       </div>
     </el-card>
 
-    <!-- 预警面料列表 -->
     <el-card v-if="alerts.length" shadow="never">
-      <template #header><b>库存预警</b></template>
+      <template #header><b>{{ $t('dashboard.alert_list') }}</b></template>
       <el-table :data="alerts" size="small">
-        <el-table-column label="面料" min-width="160">
+        <el-table-column :label="$t('dashboard.fabric_col')" min-width="160">
           <template #default="{ row }">
             <span style="font-weight:600">{{ row.cat1_name }}/{{ row.cat2_name }}</span>
-            <el-tag type="info" size="small" style="margin-left:6px">{{ row.color || '无颜色' }}</el-tag>
+            <el-tag type="info" size="small" style="margin-left:6px">{{ row.color || $t('dashboard.no_color') }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="当前库存" width="110">
+        <el-table-column :label="$t('dashboard.current_stock')" width="110">
           <template #default="{ row }">
             <el-tag type="danger">{{ row.current_stock }} {{ row.unit }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="预警阈值" width="100">
+        <el-table-column :label="$t('dashboard.alert_threshold')" width="100">
           <template #default="{ row }">{{ row.alert_threshold }} {{ row.unit }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="100">
+        <el-table-column :label="$t('common.operation')" width="100">
           <template #default>
-            <el-button size="small" type="primary" @click="$router.push('/stock/in')">去入库</el-button>
+            <el-button size="small" type="primary" @click="$router.push('/stock/in')">{{ $t('dashboard.go_stock_in') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -86,19 +82,28 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { fabricsApi, stylesApi } from '../api'
 
+const { t, locale } = useI18n()
 const fabrics = ref([])
 const styleCount = ref(0)
 
 const alerts = computed(() => fabrics.value.filter(f => f.is_alert))
 
-const stats = computed(() => [
-  { label: '面料品类', value: fabrics.value.length, sub: '种' },
-  { label: '款式档案', value: styleCount.value, sub: '款' },
-  { label: '库存预警', value: alerts.value.length, sub: '种', color: alerts.value.length ? 'var(--color-danger-text)' : 'var(--color-success-text)' },
-  { label: '今日日期', value: new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }), sub: new Date().getFullYear() + '年' }
-])
+const stats = computed(() => {
+  const dateLocale = locale.value === 'zh' ? 'zh-CN' : 'en-US'
+  const dateStr = new Date().toLocaleDateString(dateLocale, { month: 'long', day: 'numeric' })
+  const yearStr = locale.value === 'zh'
+    ? new Date().getFullYear() + t('dashboard.year_suffix')
+    : String(new Date().getFullYear())
+  return [
+    { label: t('dashboard.fabric_count'), value: fabrics.value.length, sub: t('dashboard.fabric_unit') },
+    { label: t('dashboard.style_count'), value: styleCount.value, sub: t('dashboard.style_unit') },
+    { label: t('dashboard.alert_count'), value: alerts.value.length, sub: t('dashboard.fabric_unit'), color: alerts.value.length ? 'var(--color-danger-text)' : 'var(--color-success-text)' },
+    { label: t('dashboard.today'), value: dateStr, sub: yearStr }
+  ]
+})
 
 onMounted(async () => {
   fabrics.value = await fabricsApi.list()
@@ -146,7 +151,6 @@ onMounted(async () => {
   margin-top: 4px;
 }
 
-/* Quick action buttons */
 .quick-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

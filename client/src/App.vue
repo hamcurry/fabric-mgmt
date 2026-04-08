@@ -1,119 +1,134 @@
 <template>
-  <div class="shell">
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar">
-      <!-- Brand -->
-      <div class="brand">
-        <div class="brand-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
+  <el-config-provider :locale="epLocale">
+    <div class="shell">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <!-- Brand -->
+        <div class="brand">
+          <div class="brand-logo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">{{ $t('app.title') }}</span>
+            <span class="brand-sub">{{ $t('app.subtitle') }}</span>
+          </div>
         </div>
-        <div class="brand-text">
-          <span class="brand-name">布料管家</span>
-          <span class="brand-sub">仓储管理系统</span>
+
+        <!-- Nav -->
+        <nav class="nav">
+          <router-link to="/dashboard" class="nav-item" :class="{ active: $route.path === '/dashboard' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 0 0-1.414 0l-7 7a1 1 0 0 0 1.414 1.414L4 10.414V17a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-6.586l.293.293a1 1 0 0 0 1.414-1.414l-7-7z"/>
+            </svg>
+            <span>{{ $t('nav.dashboard') }}</span>
+          </router-link>
+
+          <router-link to="/fabrics" class="nav-item" :class="{ active: $route.path === '/fabrics' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ $t('nav.fabrics') }}</span>
+          </router-link>
+
+          <router-link to="/styles" class="nav-item" :class="{ active: $route.path.startsWith('/styles') }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
+            </svg>
+            <span>{{ $t('nav.styles') }}</span>
+          </router-link>
+
+          <router-link to="/calc" class="nav-item" :class="{ active: $route.path === '/calc' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm4-4a1 1 0 100 2h.01a1 1 0 100-2H13zM9 9a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zM7 8a1 1 0 000 2h.01a1 1 0 000-2H7z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ $t('nav.calc') }}</span>
+          </router-link>
+
+          <div class="nav-section-label">{{ $t('nav.warehouse') }}</div>
+
+          <router-link to="/stock/in" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/in' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ $t('nav.stock_in') }}</span>
+          </router-link>
+
+          <router-link to="/stock/out" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/out' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ $t('nav.stock_out') }}</span>
+          </router-link>
+
+          <div class="nav-divider"></div>
+
+          <router-link to="/inventory" class="nav-item" :class="{ active: $route.path === '/inventory' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+            </svg>
+            <span>{{ $t('nav.inventory') }}</span>
+          </router-link>
+
+          <router-link to="/timeline" class="nav-item" :class="{ active: $route.path === '/timeline' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ $t('nav.timeline') }}</span>
+          </router-link>
+
+          <router-link to="/reports" class="nav-item" :class="{ active: $route.path === '/reports' }">
+            <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ $t('nav.reports') }}</span>
+          </router-link>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+          <button class="theme-btn" @click="toggleLang" :title="$t('app.lang.' + (locale === 'zh' ? 'en' : 'zh'))">
+            <svg class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7 2a1 1 0 011 1v1h3a1 1 0 110 2H9.578a18.87 18.87 0 01-1.724 4.78c.29.354.596.696.914 1.026a1 1 0 11-1.44 1.389 21.034 21.034 0 01-.554-.6 19.098 19.098 0 01-3.107 3.567 1 1 0 01-1.334-1.49 17.087 17.087 0 003.13-3.733 18.992 18.992 0 01-1.487-2.494 1 1 0 111.79-.89c.234.47.489.928.764 1.372.417-.934.752-1.913.997-2.927H3a1 1 0 110-2h3V3a1 1 0 011-1zm6 6a1 1 0 01.894.553l2.991 5.992a.869.869 0 01.02.037l.99 1.98a1 1 0 11-1.79.895L15.383 16h-4.764l-.724 1.447a1 1 0 11-1.788-.894l.99-1.98.019-.038 2.99-5.99A1 1 0 0113 8zm-1.382 6h2.764L13 11.236 11.618 14z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ locale === 'zh' ? 'English' : '中文' }}</span>
+          </button>
+          <button class="theme-btn" @click="toggleTheme" :title="isDark ? $t('app.theme.switchLight') : $t('app.theme.switchDark')">
+            <svg v-if="isDark" class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+            </svg>
+            <svg v-else class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+            </svg>
+            <span>{{ isDark ? $t('app.theme.light') : $t('app.theme.dark') }}</span>
+          </button>
         </div>
+      </aside>
+
+      <!-- ── Main ── -->
+      <div class="main">
+        <header class="topbar">
+          <div class="topbar-title">{{ $route.meta.titleKey ? $t($route.meta.titleKey) : $t('app.title') }}</div>
+          <div class="topbar-breadcrumb">{{ $route.meta.descKey ? $t($route.meta.descKey) : '' }}</div>
+        </header>
+        <main class="content">
+          <router-view />
+        </main>
       </div>
-
-      <!-- Nav -->
-      <nav class="nav">
-        <router-link to="/dashboard" class="nav-item" :class="{ active: $route.path === '/dashboard' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10.707 2.293a1 1 0 0 0-1.414 0l-7 7a1 1 0 0 0 1.414 1.414L4 10.414V17a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-6.586l.293.293a1 1 0 0 0 1.414-1.414l-7-7z"/>
-          </svg>
-          <span>首页</span>
-        </router-link>
-
-        <router-link to="/fabrics" class="nav-item" :class="{ active: $route.path === '/fabrics' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1z" clip-rule="evenodd"/>
-          </svg>
-          <span>面料管理</span>
-        </router-link>
-
-        <router-link to="/styles" class="nav-item" :class="{ active: $route.path.startsWith('/styles') }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
-          </svg>
-          <span>款式管理</span>
-        </router-link>
-
-        <router-link to="/calc" class="nav-item" :class="{ active: $route.path === '/calc' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm4-4a1 1 0 100 2h.01a1 1 0 100-2H13zM9 9a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zM7 8a1 1 0 000 2h.01a1 1 0 000-2H7z" clip-rule="evenodd"/>
-          </svg>
-          <span>用量计算</span>
-        </router-link>
-
-        <div class="nav-section-label">仓库操作</div>
-
-        <router-link to="/stock/in" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/in' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
-          </svg>
-          <span>入库</span>
-        </router-link>
-
-        <router-link to="/stock/out" class="nav-item nav-sub" :class="{ active: $route.path === '/stock/out' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/>
-          </svg>
-          <span>出库</span>
-        </router-link>
-
-        <div class="nav-divider"></div>
-
-        <router-link to="/inventory" class="nav-item" :class="{ active: $route.path === '/inventory' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-          </svg>
-          <span>库存总览</span>
-        </router-link>
-
-        <router-link to="/timeline" class="nav-item" :class="{ active: $route.path === '/timeline' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-          </svg>
-          <span>全局时间线</span>
-        </router-link>
-
-        <router-link to="/reports" class="nav-item" :class="{ active: $route.path === '/reports' }">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
-          </svg>
-          <span>报表导出</span>
-        </router-link>
-      </nav>
-
-      <!-- Sidebar Footer -->
-      <div class="sidebar-footer">
-        <button class="theme-btn" @click="toggleTheme" :title="isDark ? '切换亮色' : '切换暗色'">
-          <svg v-if="isDark" class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
-          </svg>
-          <svg v-else class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-          </svg>
-          <span>{{ isDark ? '亮色模式' : '暗色模式' }}</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- ── Main ── -->
-    <div class="main">
-      <header class="topbar">
-        <div class="topbar-title">{{ $route.meta.title || '布料管家' }}</div>
-        <div class="topbar-breadcrumb">{{ $route.meta.desc || '' }}</div>
-      </header>
-      <main class="content">
-        <router-view />
-      </main>
     </div>
-  </div>
+  </el-config-provider>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import en from 'element-plus/es/locale/lang/en'
+
+const { locale } = useI18n()
+
+const epLocale = computed(() => locale.value === 'zh' ? zhCn : en)
 
 const isDark = ref(localStorage.getItem('theme') === 'dark')
 
@@ -122,6 +137,11 @@ const toggleTheme = () => {
   const theme = isDark.value ? 'dark' : 'light'
   document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem('theme', theme)
+}
+
+const toggleLang = () => {
+  locale.value = locale.value === 'zh' ? 'en' : 'zh'
+  localStorage.setItem('lang', locale.value)
 }
 
 onMounted(() => {
@@ -264,6 +284,9 @@ onMounted(() => {
 .sidebar-footer {
   padding: 10px 8px 14px;
   border-top: 1px solid var(--color-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .theme-btn {
   display: flex;

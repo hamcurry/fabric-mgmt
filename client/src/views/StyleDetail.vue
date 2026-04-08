@@ -1,14 +1,14 @@
 <template>
   <div v-loading="loading">
     <div style="margin-bottom:16px">
-      <el-button icon="ArrowLeft" @click="$router.back()">返回</el-button>
+      <el-button icon="ArrowLeft" @click="$router.back()">{{ $t('common.back') }}</el-button>
     </div>
 
     <el-card shadow="never" style="margin-bottom:16px" v-if="style">
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <b style="font-size:18px">{{ style.name }}</b>
-          <el-button type="primary" @click="$router.push('/calc')">用量计算</el-button>
+          <el-button type="primary" @click="$router.push('/calc')">{{ $t('nav.calc') }}</el-button>
         </div>
       </template>
 
@@ -23,37 +23,36 @@
         </el-col>
         <el-col :span="style.image_base64 ? 16 : 24">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="客户">{{ style.customer || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ style.created_at }}</el-descriptions-item>
-            <el-descriptions-item label="备注" :span="2">{{ style.note || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="面料用量" :span="2">
+            <el-descriptions-item :label="$t('common.customer')">{{ style.customer || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('common.created_at')">{{ style.created_at }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('common.note')" :span="2">{{ style.note || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('styles.materials')" :span="2">
               <el-tag v-for="m in style.materials" :key="m.id" style="margin-right:8px">
-                {{ m.cat1_name }}/{{ m.cat2_name }} {{ m.usage_per_piece }}米/件
+                {{ m.cat1_name }}/{{ m.cat2_name }} {{ m.usage_per_piece }}{{ $t('common.meter_per_piece') }}
               </el-tag>
-              <span v-if="!style.materials?.length" style="color:var(--color-text-tertiary)">未设置</span>
+              <span v-if="!style.materials?.length" style="color:var(--color-text-tertiary)">{{ $t('styles.not_set') }}</span>
             </el-descriptions-item>
           </el-descriptions>
         </el-col>
       </el-row>
     </el-card>
 
-    <!-- 生产记录 -->
     <el-card shadow="never" v-if="style">
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <b>生产记录</b>
-          <span style="color:var(--color-text-secondary);font-size:13px">共 {{ grouped.length }} 批</span>
+          <b>{{ $t('style_detail.production_records') }}</b>
+          <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('style_detail.batch_count', { n: grouped.length }) }}</span>
         </div>
       </template>
 
       <div v-if="!grouped.length" style="color:#bbb;padding:24px;text-align:center">
-        暂无出库记录
+        {{ $t('style_detail.no_records') }}
       </div>
 
       <el-table v-else :data="grouped" border>
-        <el-table-column prop="date" label="日期" width="110" />
-        <el-table-column prop="po" label="PO 号" width="150" />
-        <el-table-column label="出库明细" min-width="260">
+        <el-table-column prop="date" :label="$t('style_detail.date')" width="110" />
+        <el-table-column prop="po" :label="$t('common.po_number')" width="150" />
+        <el-table-column :label="$t('style_detail.out_details')" min-width="260">
           <template #default="{ row }">
             <div style="display:flex;flex-wrap:wrap;gap:4px">
               <el-tag
@@ -64,7 +63,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="note" label="备注" width="120" show-overflow-tooltip />
+        <el-table-column prop="note" :label="$t('common.note')" width="120" show-overflow-tooltip />
       </el-table>
     </el-card>
   </div>
@@ -80,7 +79,6 @@ const style = ref(null)
 const timeline = ref([])
 const loading = ref(false)
 
-// 按 po_number 分组，每批显示一行
 const grouped = computed(() => {
   const map = {}
   for (const log of timeline.value) {
@@ -91,8 +89,8 @@ const grouped = computed(() => {
       items: [],
       note: log.note || ''
     }
-    const piecesStr = log.pieces != null ? `${log.pieces}件·` : ''
-    map[key].items.push(`${log.fabric_name}  ${piecesStr}${log.quantity}米`)
+    const piecesStr = log.pieces != null ? `${log.pieces}pcs·` : ''
+    map[key].items.push(`${log.fabric_name}  ${piecesStr}${log.quantity}m`)
   }
   return Object.values(map)
 })

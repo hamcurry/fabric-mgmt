@@ -2,17 +2,17 @@
   <el-card shadow="never">
     <template #header>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <b>款式列表</b>
+        <b>{{ $t('styles.list_title') }}</b>
         <el-space wrap>
-          <el-input v-model="searchQ" placeholder="搜索款式名/客户" clearable style="width:180px" @keyup.enter="load" />
-          <el-button @click="load" icon="Search">搜索</el-button>
-          <el-button type="primary" icon="Plus" @click="openDialog()">新建款式</el-button>
+          <el-input v-model="searchQ" :placeholder="$t('styles.search_placeholder')" clearable style="width:180px" @keyup.enter="load" />
+          <el-button @click="load" icon="Search">{{ $t('common.search') }}</el-button>
+          <el-button type="primary" icon="Plus" @click="openDialog()">{{ $t('styles.new_style') }}</el-button>
         </el-space>
       </div>
     </template>
 
     <el-table :data="styles" v-loading="loading">
-      <el-table-column label="款式图片" width="80">
+      <el-table-column :label="$t('styles.style_image')" width="80">
         <template #default="{ row }">
           <el-image
             v-if="row.image_base64"
@@ -21,54 +21,52 @@
             :preview-src-list="[row.image_base64]"
             preview-teleported
           />
-          <span v-else style="color:#ddd;font-size:12px">无图</span>
+          <span v-else style="color:#ddd;font-size:12px">{{ $t('styles.no_image') }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="款式名称" min-width="130">
+      <el-table-column prop="name" :label="$t('styles.style_name')" min-width="130">
         <template #default="{ row }">
           <el-link @click="$router.push(`/styles/${row.id}`)">{{ row.name }}</el-link>
         </template>
       </el-table-column>
-      <el-table-column prop="customer" label="客户" width="110" />
-      <el-table-column label="面料用量" min-width="180">
+      <el-table-column prop="customer" :label="$t('common.customer')" width="110" />
+      <el-table-column :label="$t('styles.materials')" min-width="180">
         <template #default="{ row }">
           <el-tag
             v-for="m in row.materials" :key="m.id"
             size="small" style="margin-right:4px;margin-bottom:2px"
-          >{{ m.cat1_name }}/{{ m.cat2_name }} {{ m.usage_per_piece }}米/件</el-tag>
-          <span v-if="!row.materials?.length" style="color:#bbb">未设置</span>
+          >{{ m.cat1_name }}/{{ m.cat2_name }} {{ m.usage_per_piece }}{{ $t('common.meter_per_piece') }}</el-tag>
+          <span v-if="!row.materials?.length" style="color:#bbb">{{ $t('styles.not_set') }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="note" label="备注" min-width="100" show-overflow-tooltip />
-      <el-table-column prop="created_at" label="创建时间" width="155" />
-      <el-table-column label="操作" width="160" fixed="right">
+      <el-table-column prop="note" :label="$t('common.note')" min-width="100" show-overflow-tooltip />
+      <el-table-column prop="created_at" :label="$t('common.created_at')" width="155" />
+      <el-table-column :label="$t('common.operation')" width="160" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="$router.push(`/styles/${row.id}`)">详情</el-button>
-          <el-button size="small" @click="openDialog(row)">编辑</el-button>
-          <el-popconfirm title="确认删除该款式？" @confirm="remove(row.id)">
+          <el-button size="small" @click="$router.push(`/styles/${row.id}`)">{{ $t('common.detail') }}</el-button>
+          <el-button size="small" @click="openDialog(row)">{{ $t('common.edit') }}</el-button>
+          <el-popconfirm :title="$t('styles.confirm_delete')" @confirm="remove(row.id)">
             <template #reference>
-              <el-button size="small" type="danger">删除</el-button>
+              <el-button size="small" type="danger">{{ $t('common.delete') }}</el-button>
             </template>
           </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 新建/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑款式' : '新建款式'" width="580px">
+    <el-dialog v-model="dialogVisible" :title="form.id ? $t('styles.edit_style') : $t('styles.new_style')" width="580px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="90px">
-        <el-form-item label="款式名称" prop="name">
+        <el-form-item :label="$t('styles.style_name')" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item label="客户">
-          <el-input v-model="form.customer" placeholder="客户名称（可选）" />
+        <el-form-item :label="$t('common.customer')">
+          <el-input v-model="form.customer" :placeholder="$t('styles.customer_placeholder')" />
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item :label="$t('common.note')">
           <el-input v-model="form.note" type="textarea" :rows="2" />
         </el-form-item>
 
-        <!-- 款式图片 -->
-        <el-form-item label="款式图片">
+        <el-form-item :label="$t('styles.style_image')">
           <div
             ref="pasteZoneRef"
             tabindex="0"
@@ -81,7 +79,7 @@
           >
             <div v-if="!form.image_base64" style="text-align:center;color:var(--color-text-tertiary);padding:8px 0">
               <el-icon style="font-size:24px"><Picture /></el-icon>
-              <div style="font-size:13px;margin-top:4px">点击此处后 Ctrl+V 粘贴截图</div>
+              <div style="font-size:13px;margin-top:4px">{{ $t('styles.paste_placeholder') }}</div>
             </div>
             <div v-else style="position:relative;display:inline-block">
               <img :src="form.image_base64" style="max-height:160px;max-width:100%;border-radius:4px" />
@@ -94,22 +92,19 @@
           </div>
         </el-form-item>
 
-        <!-- 面料用量（选到二级类目） -->
-        <el-form-item label="面料用量">
+        <el-form-item :label="$t('styles.materials')">
           <div style="width:100%">
             <div
               v-for="(m, i) in form.materials" :key="i"
               style="display:flex;gap:8px;margin-bottom:8px;align-items:center"
             >
-              <!-- 一级类目 -->
               <el-select
-                v-model="m.cat1_id" placeholder="大类" style="width:100px"
+                v-model="m.cat1_id" :placeholder="$t('common.fabric')" style="width:100px"
                 @change="m.cat2_id = null"
               >
                 <el-option v-for="c1 in catTree" :key="c1.id" :label="c1.name" :value="c1.id" />
               </el-select>
-              <!-- 二级类目 -->
-              <el-select v-model="m.cat2_id" placeholder="小类" style="flex:1" :disabled="!m.cat1_id">
+              <el-select v-model="m.cat2_id" :placeholder="$t('common.unit')" style="flex:1" :disabled="!m.cat1_id">
                 <el-option
                   v-for="c2 in (catTree.find(c=>c.id===m.cat1_id)?.children||[])"
                   :key="c2.id" :label="c2.name" :value="c2.id"
@@ -117,31 +112,34 @@
               </el-select>
               <el-input-number
                 v-model="m.usage_per_piece" :min="0.001" :precision="3" :step="0.1"
-                style="width:120px" placeholder="用量"
+                style="width:120px"
               />
-              <span style="color:#888;white-space:nowrap">米/件</span>
+              <span style="color:#888;white-space:nowrap">{{ $t('common.meter_per_piece') }}</span>
               <el-button icon="Delete" circle size="small" type="danger" plain @click="form.materials.splice(i,1)" />
             </div>
             <el-button
               v-if="form.materials.length < 5"
               size="small" icon="Plus"
               @click="form.materials.push({ cat1_id: null, cat2_id: null, usage_per_piece: 1 })"
-            >添加面料</el-button>
+            >{{ $t('styles.add_material') }}</el-button>
           </div>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
+        <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="save">{{ $t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </el-card>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { stylesApi, categoriesApi } from '../api'
+
+const { t } = useI18n()
 
 const styles = ref([])
 const catTree = ref([])
@@ -157,7 +155,9 @@ const defaultForm = () => ({
   id: null, name: '', customer: '', note: '', image_base64: '', materials: []
 })
 const form = ref(defaultForm())
-const rules = { name: [{ required: true, message: '请输入款式名称' }] }
+const rules = computed(() => ({
+  name: [{ required: true, message: t('styles.val_name') }]
+}))
 
 const load = async () => {
   loading.value = true
@@ -217,7 +217,7 @@ const save = async () => {
     } else {
       await stylesApi.create(payload)
     }
-    ElMessage.success('保存成功')
+    ElMessage.success(t('common.save_success'))
     dialogVisible.value = false
     load()
   } catch (e) {
@@ -230,7 +230,7 @@ const save = async () => {
 const remove = async (id) => {
   try {
     await stylesApi.remove(id)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('common.delete_success'))
     load()
   } catch (e) {
     ElMessage.error(e.message)

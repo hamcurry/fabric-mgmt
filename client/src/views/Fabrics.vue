@@ -1,17 +1,14 @@
 <template>
   <div>
-    <!-- 操作栏 -->
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <el-button type="primary" icon="Plus" @click="openFabricDialog()">新增面料</el-button>
-      <el-button icon="Setting" @click="catDialogVisible = true">管理类目</el-button>
-      <el-button icon="Refresh" @click="loadTree">刷新</el-button>
+      <el-button type="primary" icon="Plus" @click="openFabricDialog()">{{ $t('fabrics.add_fabric') }}</el-button>
+      <el-button icon="Setting" @click="catDialogVisible = true">{{ $t('fabrics.manage_categories') }}</el-button>
+      <el-button icon="Refresh" @click="loadTree">{{ $t('common.refresh') }}</el-button>
     </div>
 
-    <!-- 三级树状展示 -->
     <div v-loading="loading">
-      <div v-if="!tree.length" style="color:var(--color-text-tertiary);padding:40px;text-align:center">暂无数据，请先管理类目再新增面料</div>
+      <div v-if="!tree.length" style="color:var(--color-text-tertiary);padding:40px;text-align:center">{{ $t('fabrics.no_data') }}</div>
 
-      <!-- 一级类目 -->
       <el-card
         v-for="cat1 in tree"
         :key="cat1.id"
@@ -21,11 +18,10 @@
         <template #header>
           <div style="display:flex;align-items:center;gap:8px">
             <el-tag type="primary" size="large" style="font-size:14px;font-weight:600">{{ cat1.name }}</el-tag>
-            <span style="color:var(--color-text-secondary);font-size:13px">{{ countFabrics(cat1) }} 种面料</span>
+            <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('fabrics.fabric_count', { n: countFabrics(cat1) }) }}</span>
           </div>
         </template>
 
-        <!-- 二级类目 -->
         <div
           v-for="cat2 in cat1.children"
           :key="cat2.id"
@@ -36,35 +32,34 @@
             <el-button
               size="small" icon="Plus" link
               @click="openFabricDialog({ cat1_id: cat1.id, cat2_id: cat2.id })"
-            >添加颜色</el-button>
+            >{{ $t('fabrics.add_color') }}</el-button>
           </div>
 
-          <!-- 三级：颜色 + 库存 -->
           <el-table :data="cat2.fabrics" size="small" border style="margin-left:16px">
-            <el-table-column prop="color" label="颜色" min-width="100">
+            <el-table-column prop="color" :label="$t('common.color')" min-width="100">
               <template #default="{ row }">
                 <span v-if="row.color">{{ row.color }}</span>
-                <span v-else style="color:var(--color-text-tertiary)">未指定颜色</span>
+                <span v-else style="color:var(--color-text-tertiary)">{{ $t('fabrics.unspecified_color') }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="当前库存" width="130">
+            <el-table-column :label="$t('fabrics.current_stock')" width="130">
               <template #default="{ row }">
                 <el-tag :type="row.is_alert ? 'danger' : 'success'">
                   {{ row.current_stock }} {{ row.unit }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="预警阈值" width="110">
+            <el-table-column :label="$t('fabrics.alert_threshold')" width="110">
               <template #default="{ row }">{{ row.alert_threshold }} {{ row.unit }}</template>
             </el-table-column>
-            <el-table-column prop="unit" label="单位" width="70" />
-            <el-table-column prop="created_at" label="创建时间" width="155" />
-            <el-table-column label="操作" width="140" fixed="right">
+            <el-table-column prop="unit" :label="$t('common.unit')" width="70" />
+            <el-table-column prop="created_at" :label="$t('common.created_at')" width="155" />
+            <el-table-column :label="$t('common.operation')" width="140" fixed="right">
               <template #default="{ row }">
-                <el-button size="small" @click="openFabricDialog(row, cat1.id, cat2.id)">编辑</el-button>
-                <el-popconfirm title="确认删除？" @confirm="removeFabric(row.id)">
+                <el-button size="small" @click="openFabricDialog(row, cat1.id, cat2.id)">{{ $t('common.edit') }}</el-button>
+                <el-popconfirm :title="$t('fabrics.confirm_delete_fabric')" @confirm="removeFabric(row.id)">
                   <template #reference>
-                    <el-button size="small" type="danger">删除</el-button>
+                    <el-button size="small" type="danger">{{ $t('common.delete') }}</el-button>
                   </template>
                 </el-popconfirm>
               </template>
@@ -73,21 +68,21 @@
         </div>
 
         <div v-if="!cat1.children.length" style="color:var(--color-text-tertiary);font-size:13px;padding:8px 0">
-          该类目下暂无二级分类，请在「管理类目」中添加
+          {{ $t('fabrics.no_sub_cats') }}
         </div>
       </el-card>
     </div>
 
     <!-- 新增/编辑面料弹窗 -->
-    <el-dialog v-model="fabricDialogVisible" :title="fabricForm.id ? '编辑面料' : '新增面料'" width="440px">
-      <el-form :model="fabricForm" :rules="fabricRules" ref="fabricFormRef" label-width="90px">
-        <el-form-item label="一级类目" prop="cat1_id">
-          <el-select v-model="fabricForm.cat1_id" placeholder="选择大类" style="width:100%" @change="onCat1Change">
+    <el-dialog v-model="fabricDialogVisible" :title="fabricForm.id ? $t('fabrics.edit_fabric') : $t('fabrics.new_fabric')" width="440px">
+      <el-form :model="fabricForm" :rules="fabricRules" ref="fabricFormRef" label-width="100px">
+        <el-form-item :label="$t('fabrics.cat1')" prop="cat1_id">
+          <el-select v-model="fabricForm.cat1_id" :placeholder="$t('fabrics.select_cat1')" style="width:100%" @change="onCat1Change">
             <el-option v-for="c1 in catTree" :key="c1.id" :label="c1.name" :value="c1.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="二级类目" prop="cat2_id">
-          <el-select v-model="fabricForm.cat2_id" placeholder="选择小类" style="width:100%" :disabled="!fabricForm.cat1_id">
+        <el-form-item :label="$t('fabrics.cat2')" prop="cat2_id">
+          <el-select v-model="fabricForm.cat2_id" :placeholder="$t('fabrics.select_cat2')" style="width:100%" :disabled="!fabricForm.cat1_id">
             <el-option
               v-for="c2 in filteredCat2"
               :key="c2.id" :label="c2.name" :value="c2.id"
@@ -96,39 +91,38 @@
           <el-button
             size="small" link type="primary" style="margin-top:4px"
             @click="quickAddCat2"
-          >+ 新建"{{ fabricForm.cat1_id ? getCat1Name(fabricForm.cat1_id) : "" }}"下的小类</el-button>
+          >{{ $t('fabrics.add_sub_cat', { name: fabricForm.cat1_id ? getCat1Name(fabricForm.cat1_id) : '' }) }}</el-button>
         </el-form-item>
-        <el-form-item label="颜色">
-          <el-input v-model="fabricForm.color" placeholder="如：黑色、米白、#123456（可留空）" />
+        <el-form-item :label="$t('common.color')">
+          <el-input v-model="fabricForm.color" :placeholder="$t('fabrics.color_placeholder')" />
         </el-form-item>
-        <el-form-item label="单位">
+        <el-form-item :label="$t('common.unit')">
           <el-select v-model="fabricForm.unit" style="width:100%">
-            <el-option label="米" value="米" />
-            <el-option label="码" value="码" />
-            <el-option label="千克" value="千克" />
+            <el-option :label="$t('common.meter')" value="米" />
+            <el-option :label="$t('common.yard')" value="码" />
+            <el-option :label="$t('common.kg')" value="千克" />
           </el-select>
         </el-form-item>
-        <el-form-item label="当前库存" prop="current_stock">
+        <el-form-item :label="$t('fabrics.current_stock')" prop="current_stock">
           <el-input-number v-model="fabricForm.current_stock" :min="0" :precision="2" style="width:100%" />
         </el-form-item>
-        <el-form-item label="预警阈值">
+        <el-form-item :label="$t('fabrics.alert_threshold')">
           <el-input-number v-model="fabricForm.alert_threshold" :min="0" :precision="2" style="width:100%" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="fabricDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveFabric">保存</el-button>
+        <el-button @click="fabricDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="saveFabric">{{ $t('common.save') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 类目管理弹窗 -->
-    <el-dialog v-model="catDialogVisible" title="管理类目" width="560px">
+    <el-dialog v-model="catDialogVisible" :title="$t('fabrics.manage_cats_title')" width="560px">
       <div style="display:flex;gap:16px">
-        <!-- 一级类目 -->
         <div style="flex:1;border-right:1px solid #f0f0f0;padding-right:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <b>一级类目</b>
-            <el-button size="small" icon="Plus" @click="addCat1">新增</el-button>
+            <b>{{ $t('fabrics.cat1_section') }}</b>
+            <el-button size="small" icon="Plus" @click="addCat1">{{ $t('common.add') }}</el-button>
           </div>
           <div
             v-for="c1 in catTree"
@@ -143,13 +137,12 @@
           </div>
         </div>
 
-        <!-- 二级类目 -->
         <div style="flex:1">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <b>二级类目 <span style="color:#888;font-weight:normal;font-size:12px">（选左侧查看）</span></b>
-            <el-button size="small" icon="Plus" :disabled="!selectedCat1Id" @click="addCat2">新增</el-button>
+            <b>{{ $t('fabrics.cat2_section') }} <span style="color:#888;font-weight:normal;font-size:12px">{{ $t('fabrics.cat2_hint') }}</span></b>
+            <el-button size="small" icon="Plus" :disabled="!selectedCat1Id" @click="addCat2">{{ $t('common.add') }}</el-button>
           </div>
-          <div v-if="!selectedCat1Id" style="color:var(--color-text-tertiary);font-size:13px">请先选择一级类目</div>
+          <div v-if="!selectedCat1Id" style="color:var(--color-text-tertiary);font-size:13px">{{ $t('fabrics.select_cat1_first') }}</div>
           <div
             v-for="c2 in filteredCatTree2"
             :key="c2.id"
@@ -162,7 +155,7 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="catDialogVisible = false">关闭</el-button>
+        <el-button @click="catDialogVisible = false">{{ $t('common.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -170,8 +163,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fabricsApi, categoriesApi } from '../api'
+
+const { t } = useI18n()
 
 const tree = ref([])
 const catTree = ref([])
@@ -186,11 +182,11 @@ const defaultFabricForm = () => ({
   id: null, cat1_id: null, cat2_id: null, color: '', unit: '米', current_stock: 0, alert_threshold: 20
 })
 const fabricForm = ref(defaultFabricForm())
-const fabricRules = {
-  cat1_id: [{ required: true, message: '请选择一级类目' }],
-  cat2_id: [{ required: true, message: '请选择二级类目' }],
-  current_stock: [{ required: true, message: '请填写库存' }]
-}
+const fabricRules = computed(() => ({
+  cat1_id: [{ required: true, message: t('fabrics.val_cat1') }],
+  cat2_id: [{ required: true, message: t('fabrics.val_cat2') }],
+  current_stock: [{ required: true, message: t('fabrics.val_stock') }]
+}))
 
 const filteredCat2 = computed(() =>
   fabricForm.value.cat1_id
@@ -218,7 +214,6 @@ const onCat1Change = () => { fabricForm.value.cat2_id = null }
 
 const openFabricDialog = (row = null, cat1_id = null, cat2_id = null) => {
   if (row?.id) {
-    // 编辑模式：row 来自 tree，需要提供 cat1_id / cat2_id
     fabricForm.value = {
       id: row.id,
       cat1_id: cat1_id || row.cat1_id || null,
@@ -254,7 +249,7 @@ const saveFabric = async () => {
     } else {
       await fabricsApi.create(payload)
     }
-    ElMessage.success('保存成功')
+    ElMessage.success(t('common.save_success'))
     fabricDialogVisible.value = false
     loadTree()
   } catch (e) {
@@ -267,77 +262,75 @@ const saveFabric = async () => {
 const removeFabric = async (id) => {
   try {
     await fabricsApi.remove(id)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('common.delete_success'))
     loadTree()
   } catch (e) {
     ElMessage.error(e.message)
   }
 }
 
-// 快速新建二级类目（在面料弹窗内）
 const quickAddCat2 = async () => {
   if (!fabricForm.value.cat1_id) return
-  const { value } = await ElMessageBox.prompt('请输入二级类目名称（如：色丁、真丝）', '新建小类', {
-    confirmButtonText: '确定', cancelButtonText: '取消',
-    inputPattern: /\S+/, inputErrorMessage: '名称不能为空'
+  const { value } = await ElMessageBox.prompt(t('fabrics.new_sub_cat_prompt'), t('fabrics.new_sub_cat_title'), {
+    confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel'),
+    inputPattern: /\S+/, inputErrorMessage: t('common.name_required')
   })
   try {
     const r = await categoriesApi.createCat2({ cat1_id: fabricForm.value.cat1_id, name: value.trim() })
     await loadCatTree()
     fabricForm.value.cat2_id = r.id
-    ElMessage.success('创建成功')
+    ElMessage.success(t('common.create_success'))
   } catch (e) {
     ElMessage.error(e.message)
   }
 }
 
-// 类目管理操作
 const addCat1 = async () => {
-  const { value } = await ElMessageBox.prompt('请输入一级类目名称（如：面布、里布）', '新增一级类目', {
-    confirmButtonText: '确定', cancelButtonText: '取消',
-    inputPattern: /\S+/, inputErrorMessage: '名称不能为空'
+  const { value } = await ElMessageBox.prompt(t('fabrics.new_cat1_prompt'), t('fabrics.new_cat1_title'), {
+    confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel'),
+    inputPattern: /\S+/, inputErrorMessage: t('common.name_required')
   })
   try {
     await categoriesApi.createCat1({ name: value.trim() })
     loadCatTree(); loadTree()
-    ElMessage.success('创建成功')
+    ElMessage.success(t('common.create_success'))
   } catch (e) { ElMessage.error(e.message) }
 }
 const editCat1 = async (c1) => {
-  const { value } = await ElMessageBox.prompt('修改名称', '编辑一级类目', {
-    confirmButtonText: '确定', cancelButtonText: '取消',
+  const { value } = await ElMessageBox.prompt(t('fabrics.edit_name_prompt'), t('fabrics.edit_cat1_title'), {
+    confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel'),
     inputValue: c1.name
   })
   await categoriesApi.updateCat1(c1.id, { name: value.trim() })
   loadCatTree(); loadTree()
 }
 const delCat1 = async (id) => {
-  await ElMessageBox.confirm('删除一级类目将同时删除其下所有二级类目（面料记录需先手动删除）', '确认删除', { type: 'warning' })
+  await ElMessageBox.confirm(t('fabrics.confirm_del_cat1'), t('fabrics.confirm_del_cat1_title'), { type: 'warning' })
   try {
     await categoriesApi.removeCat1(id)
     selectedCat1Id.value = null
     loadCatTree(); loadTree()
-    ElMessage.success('已删除')
+    ElMessage.success(t('common.deleted'))
   } catch (e) { ElMessage.error(e.message) }
 }
 const addCat2 = async () => {
-  const { value } = await ElMessageBox.prompt('请输入二级类目名称（如：色丁、棉布）', '新增二级类目', {
-    confirmButtonText: '确定', cancelButtonText: '取消',
-    inputPattern: /\S+/, inputErrorMessage: '名称不能为空'
+  const { value } = await ElMessageBox.prompt(t('fabrics.new_cat2_prompt'), t('fabrics.new_cat2_title'), {
+    confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel'),
+    inputPattern: /\S+/, inputErrorMessage: t('common.name_required')
   })
   await categoriesApi.createCat2({ cat1_id: selectedCat1Id.value, name: value.trim() })
   loadCatTree(); loadTree()
 }
 const editCat2 = async (c2) => {
-  const { value } = await ElMessageBox.prompt('修改名称', '编辑二级类目', {
-    confirmButtonText: '确定', cancelButtonText: '取消',
+  const { value } = await ElMessageBox.prompt(t('fabrics.edit_name_prompt'), t('fabrics.edit_cat2_title'), {
+    confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel'),
     inputValue: c2.name
   })
   await categoriesApi.updateCat2(c2.id, { name: value.trim() })
   loadCatTree(); loadTree()
 }
 const delCat2 = async (id) => {
-  await ElMessageBox.confirm('确认删除该二级类目吗？', '确认', { type: 'warning' })
+  await ElMessageBox.confirm(t('fabrics.confirm_del_cat2'), t('common.confirm'), { type: 'warning' })
   try {
     await categoriesApi.removeCat2(id)
     loadCatTree(); loadTree()

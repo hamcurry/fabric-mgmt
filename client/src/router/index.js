@@ -2,16 +2,16 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
-  { path: '/dashboard', component: () => import('../views/Dashboard.vue'), meta: { title: '首页', desc: '仓库概览与快捷操作' } },
-  { path: '/fabrics', component: () => import('../views/Fabrics.vue'), meta: { title: '面料管理', desc: '管理面料品类、颜色与库存阈值' } },
-  { path: '/styles', component: () => import('../views/Styles.vue'), meta: { title: '款式管理', desc: '录入款式档案与面料用量' } },
-  { path: '/styles/:id', component: () => import('../views/StyleDetail.vue'), meta: { title: '款式详情' } },
-  { path: '/calc', component: () => import('../views/Calc.vue'), meta: { title: '用量计算', desc: '按件数计算所需面料用量' } },
-  { path: '/stock/in', component: () => import('../views/StockIn.vue'), meta: { title: '入库', desc: '记录新到货面料数量' } },
-  { path: '/stock/out', component: () => import('../views/StockOut.vue'), meta: { title: '出库', desc: '关联款式扣减库存' } },
-  { path: '/inventory', component: () => import('../views/Inventory.vue'), meta: { title: '库存总览', desc: '查看全部面料当前库存状态' } },
-  { path: '/timeline', component: () => import('../views/Timeline.vue'), meta: { title: '全局时间线', desc: '所有操作记录与历史流水' } },
-  { path: '/reports', component: () => import('../views/Reports.vue'), meta: { title: '报表导出', desc: '导出库存报表为 Excel 文件' } }
+  { path: '/dashboard', component: () => import('../views/Dashboard.vue'), meta: { titleKey: 'nav.dashboard', descKey: 'nav.dashboard_desc' } },
+  { path: '/fabrics', component: () => import('../views/Fabrics.vue'), meta: { titleKey: 'nav.fabrics', descKey: 'nav.fabrics_desc' } },
+  { path: '/styles', component: () => import('../views/Styles.vue'), meta: { titleKey: 'nav.styles', descKey: 'nav.styles_desc' } },
+  { path: '/styles/:id', component: () => import('../views/StyleDetail.vue'), meta: { titleKey: 'nav.style_detail' } },
+  { path: '/calc', component: () => import('../views/Calc.vue'), meta: { titleKey: 'nav.calc', descKey: 'nav.calc_desc' } },
+  { path: '/stock/in', component: () => import('../views/StockIn.vue'), meta: { titleKey: 'nav.stock_in', descKey: 'nav.stock_in_desc' } },
+  { path: '/stock/out', component: () => import('../views/StockOut.vue'), meta: { titleKey: 'nav.stock_out', descKey: 'nav.stock_out_desc' } },
+  { path: '/inventory', component: () => import('../views/Inventory.vue'), meta: { titleKey: 'nav.inventory', descKey: 'nav.inventory_desc' } },
+  { path: '/timeline', component: () => import('../views/Timeline.vue'), meta: { titleKey: 'nav.timeline', descKey: 'nav.timeline_desc' } },
+  { path: '/reports', component: () => import('../views/Reports.vue'), meta: { titleKey: 'nav.reports', descKey: 'nav.reports_desc' } }
 ]
 
 export default createRouter({
