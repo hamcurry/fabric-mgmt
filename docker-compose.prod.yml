@@ -29,7 +29,7 @@ services:
     container_name: fabric-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "7737:80"
     depends_on:
       backend:
         condition: service_healthy
