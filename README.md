@@ -4,7 +4,7 @@
 
 **中文** | [English](#english)
 
-一个专为服装厂设计的布料仓储管理系统，支持面料入出库、款式用量计算、库存预警与报表导出。
+一个专为服装厂设计的布料仓储管理系统，支持面料入出库、款式用量计算、库存预警、报表导出与数据备份还原。
 
 ![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?logo=vue.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)
@@ -25,8 +25,10 @@
 - **库存总览** — 实时库存状态，预警高亮，支持按类目筛选
 - **全局时间线** — 所有操作记录，支持多维度筛选与回滚
 - **报表导出** — 导出库存汇总或流水明细为 Excel 文件
+- **数据备份与还原** — 一键下载 SQLite 备份文件，支持从备份还原全量数据
 - **中英文切换** — 界面支持中文 / English 实时切换
 - **深色模式** — 支持亮色 / 暗色主题切换
+- **手机端支持** — 响应式布局，侧边栏抽屉式导航，移动端可正常使用
 
 ## 技术栈
 
@@ -111,19 +113,30 @@ cd client && npm install && npm run dev
 
 ---
 
+## 数据备份与还原
+
+进入侧边栏「备份还原」页面：
+
+- **下载备份** — 直接下载当前 `fabric.db` 文件到本地，建议定期执行
+- **还原数据** — 上传之前下载的 `.db` 备份文件，确认后服务自动重启（约 5-10 秒），刷新页面即可
+
+> Docker 部署时，还原触发 `process.exit(0)`，`restart: unless-stopped` 会自动拉起服务。
+
+---
+
 ## 项目结构
 
 ```
 fabric-mgmt/
 ├── client/                 # Vue 3 前端
 │   ├── src/
-│   │   ├── views/          # 10 个页面组件
+│   │   ├── views/          # 11 个页面组件（含 Backup.vue）
 │   │   ├── locales/        # 中英文翻译文件
 │   │   ├── router/         # 路由配置
 │   │   └── api/            # API 请求封装
 │   └── vite.config.js
 ├── server/                 # Express 后端
-│   ├── routes/             # API 路由
+│   ├── routes/             # API 路由（含 backup.js）
 │   ├── db.js               # SQLite 初始化
 │   └── index.js            # 入口文件
 ├── data/                   # SQLite 数据库（gitignore）
@@ -135,16 +148,6 @@ fabric-mgmt/
 ├── ecosystem.config.js     # PM2 配置
 └── start-bg.bat            # Windows 一键启动脚本
 ```
-
----
-
-## 截图
-
-> 侧边栏深色 + 暖米白主体，Claude 官网同款设计语言
-
-| 首页仪表盘 | 面料管理 | 用量计算 |
-|---|---|---|
-| 库存概览与快捷操作 | 按类目树状展示 | 自动匹配面料出库 |
 
 ---
 
@@ -162,7 +165,7 @@ MIT
 
 [中文](#top) | **English**
 
-A fabric inventory management system designed for garment factories — stock in/out tracking, style-based usage calculation, low-stock alerts, and Excel export.
+A fabric inventory management system designed for garment factories — stock in/out tracking, style-based usage calculation, low-stock alerts, Excel export, and data backup/restore.
 
 </div>
 
@@ -177,8 +180,10 @@ A fabric inventory management system designed for garment factories — stock in
 - **Inventory Overview** — Real-time stock status with alert highlighting and category filter
 - **Global Timeline** — All operations with multi-filter search and rollback support
 - **Excel Export** — Export stock summary or transaction history to Excel
+- **Backup & Restore** — One-click download of SQLite backup; restore from any previous backup file
 - **i18n** — Switch between Chinese and English at runtime
 - **Dark Mode** — Light / dark theme toggle
+- **Mobile Support** — Responsive layout with slide-in sidebar drawer for phones and tablets
 
 ## Tech Stack
 
@@ -262,19 +267,30 @@ Backend API: `http://localhost:3000`
 
 ---
 
+## Backup & Restore
+
+Open the **Backup** page from the sidebar:
+
+- **Download Backup** — Downloads the current `fabric.db` file to your device. Do this regularly.
+- **Restore** — Upload a previously downloaded `.db` file. The service restarts automatically (~5-10 s); refresh the page after.
+
+> On Docker deployments, restore triggers `process.exit(0)` and `restart: unless-stopped` brings it back automatically.
+
+---
+
 ## Project Structure
 
 ```
 fabric-mgmt/
 ├── client/                 # Vue 3 frontend
 │   ├── src/
-│   │   ├── views/          # 10 page components
+│   │   ├── views/          # 11 page components (incl. Backup.vue)
 │   │   ├── locales/        # zh / en translation files
 │   │   ├── router/         # Route configuration
 │   │   └── api/            # API request helpers
 │   └── vite.config.js
 ├── server/                 # Express backend
-│   ├── routes/             # API route handlers
+│   ├── routes/             # API route handlers (incl. backup.js)
 │   ├── db.js               # SQLite initialization
 │   └── index.js            # Entry point
 ├── data/                   # SQLite database (gitignored)
