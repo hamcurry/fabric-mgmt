@@ -47,7 +47,8 @@ db.exec(`
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     style_id        INTEGER NOT NULL REFERENCES styles(id) ON DELETE CASCADE,
     cat2_id         INTEGER NOT NULL REFERENCES fabric_cat2(id),
-    usage_per_piece REAL    NOT NULL
+    actual_usage_per_piece    REAL DEFAULT NULL,
+    estimated_usage_per_piece REAL DEFAULT NULL
   );
 
   CREATE TABLE IF NOT EXISTS stock_logs (
@@ -61,6 +62,11 @@ db.exec(`
     style_name  TEXT DEFAULT '',
     po_number   TEXT DEFAULT '',
     note        TEXT DEFAULT '',
+    images_json TEXT DEFAULT '[]',
+    usage_source TEXT DEFAULT '',
+    usage_per_piece_snapshot REAL DEFAULT NULL,
+    style_material_cat2_id INTEGER DEFAULT NULL,
+    calc_snapshot_json TEXT DEFAULT '',
     operated_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
@@ -77,6 +83,15 @@ db.exec(`
 
 // 旧库迁移：stock_logs 加 pieces 列（幂等）
 try { db.exec("ALTER TABLE stock_logs ADD COLUMN pieces INTEGER DEFAULT NULL") } catch {}
+try { db.exec("ALTER TABLE stock_logs ADD COLUMN images_json TEXT DEFAULT '[]'") } catch {}
+try { db.exec("ALTER TABLE style_materials ADD COLUMN actual_usage_per_piece REAL DEFAULT NULL") } catch {}
+try { db.exec("ALTER TABLE style_materials ADD COLUMN estimated_usage_per_piece REAL DEFAULT NULL") } catch {}
+try { db.exec("UPDATE style_materials SET actual_usage_per_piece = usage_per_piece WHERE actual_usage_per_piece IS NULL") } catch {}
+try { db.exec("UPDATE style_materials SET usage_per_piece = COALESCE(actual_usage_per_piece, estimated_usage_per_piece, usage_per_piece)") } catch {}
+try { db.exec("ALTER TABLE stock_logs ADD COLUMN usage_source TEXT DEFAULT ''") } catch {}
+try { db.exec("ALTER TABLE stock_logs ADD COLUMN usage_per_piece_snapshot REAL DEFAULT NULL") } catch {}
+try { db.exec("ALTER TABLE stock_logs ADD COLUMN style_material_cat2_id INTEGER DEFAULT NULL") } catch {}
+try { db.exec("ALTER TABLE stock_logs ADD COLUMN calc_snapshot_json TEXT DEFAULT ''") } catch {}
 
 // 预置一级类目（仅首次）
 const presets = ['面布', '里布', '衬布', '蕾丝', '花边', '辅料']

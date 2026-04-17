@@ -82,6 +82,16 @@
             </span>
             <span v-else style="flex:1"></span>
 
+            <el-button
+              v-if="log.images?.length"
+              size="small"
+              plain
+              style="flex-shrink:0"
+              @click="openImages(log)"
+            >
+              {{ $t('timeline.image_count', { n: log.images.length }) }}
+            </el-button>
+
             <el-popconfirm :title="$t('timeline.delete_confirm')" @confirm="deleteLog(log.id)">
               <template #reference>
                 <el-button size="small" type="danger" plain style="flex-shrink:0">{{ $t('common.delete') }}</el-button>
@@ -91,6 +101,21 @@
         </div>
       </div>
     </div>
+
+    <el-dialog v-model="imageDialogVisible" :title="$t('timeline.image_preview_title')" width="760px">
+      <div v-if="imageDialogImages.length" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+        <el-image
+          v-for="(img, i) in imageDialogImages"
+          :key="i"
+          :src="imageSrc(img)"
+          :preview-src-list="imagePreviewList"
+          :initial-index="i"
+          fit="cover"
+          preview-teleported
+          style="width:100%;height:180px;border-radius:8px;border:1px solid var(--color-border)"
+        />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -108,6 +133,8 @@ const styles = ref([])
 const loading = ref(false)
 const dateRange = ref([])
 const filters = ref({ type: '', fabric_id: null, style_id: null })
+const imageDialogVisible = ref(false)
+const imageDialogImages = ref([])
 
 const groupedLogs = computed(() => {
   const map = {}
@@ -118,6 +145,9 @@ const groupedLogs = computed(() => {
   }
   return Object.values(map)
 })
+
+const imageSrc = (img) => `data:${img.mime_type};base64,${img.data_base64}`
+const imagePreviewList = computed(() => imageDialogImages.value.map(imageSrc))
 
 const load = async () => {
   loading.value = true
@@ -146,6 +176,11 @@ const deleteLog = async (id) => {
   } catch (e) {
     ElMessage.error(e.message)
   }
+}
+
+const openImages = (log) => {
+  imageDialogImages.value = log.images || []
+  imageDialogVisible.value = true
 }
 
 onMounted(async () => {

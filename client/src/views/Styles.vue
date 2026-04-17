@@ -14,13 +14,25 @@
     <el-table :data="styles" v-loading="loading">
       <el-table-column :label="$t('styles.style_image')" width="80">
         <template #default="{ row }">
-          <el-image
+          <el-tooltip
             v-if="row.image_base64"
-            :src="row.image_base64"
-            style="width:50px;height:50px;object-fit:cover;border-radius:4px"
-            :preview-src-list="[row.image_base64]"
-            preview-teleported
-          />
+            effect="light"
+            placement="right"
+            :show-after="300"
+            :hide-after="0"
+            popper-class="img-hover-popper"
+          >
+            <template #content>
+              <img :src="row.image_base64" style="max-width:300px;max-height:300px;object-fit:contain;display:block" />
+            </template>
+            <el-image
+              :src="row.image_base64"
+              fit="cover"
+              style="width:50px;height:50px;border-radius:4px;cursor:zoom-in;display:block"
+              :preview-src-list="[row.image_base64]"
+              preview-teleported
+            />
+          </el-tooltip>
           <span v-else style="color:#ddd;font-size:12px">{{ $t('styles.no_image') }}</span>
         </template>
       </el-table-column>
@@ -30,13 +42,19 @@
         </template>
       </el-table-column>
       <el-table-column prop="customer" :label="$t('common.customer')" width="110" />
-      <el-table-column :label="$t('styles.materials')" min-width="180">
+      <el-table-column label="款式用量" min-width="260">
         <template #default="{ row }">
-          <el-tag
-            v-for="m in row.materials" :key="m.id"
-            size="small" style="margin-right:4px;margin-bottom:2px"
-          >{{ m.cat1_name }}/{{ m.cat2_name }} {{ m.usage_per_piece }}{{ $t('common.meter_per_piece') }}</el-tag>
-          <span v-if="!row.materials?.length" style="color:#bbb">{{ $t('styles.not_set') }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <el-tag
+              v-for="m in row.materials"
+              :key="m.id"
+              size="small"
+              style="margin-bottom:2px"
+            >
+              {{ materialSummary(m) }}
+            </el-tag>
+            <span v-if="!row.materials?.length" style="color:#bbb">{{ $t('styles.not_set') }}</span>
+          </div>
         </template>
       </el-table-column>
       <el-table-column prop="note" :label="$t('common.note')" min-width="100" show-overflow-tooltip />
@@ -54,7 +72,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? $t('styles.edit_style') : $t('styles.new_style')" width="580px">
+    <el-dialog v-model="dialogVisible" :title="form.id ? $t('styles.edit_style') : $t('styles.new_style')" width="760px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="90px">
         <el-form-item :label="$t('styles.style_name')" prop="name">
           <el-input v-model="form.name" />
@@ -67,60 +85,89 @@
         </el-form-item>
 
         <el-form-item :label="$t('styles.style_image')">
-          <div
-            ref="pasteZoneRef"
-            tabindex="0"
-            style="width:100%;border:2px dashed var(--color-border);border-radius:8px;padding:12px;cursor:pointer;outline:none;transition:border-color .15s"
-            :style="{ borderColor: pasteActive ? 'var(--color-primary)' : 'var(--color-border)' }"
-            @click="pasteZoneRef.focus()"
-            @focus="pasteActive=true"
-            @blur="pasteActive=false"
-            @paste="handlePaste"
-          >
-            <div v-if="!form.image_base64" style="text-align:center;color:var(--color-text-tertiary);padding:8px 0">
-              <el-icon style="font-size:24px"><Picture /></el-icon>
-              <div style="font-size:13px;margin-top:4px">{{ $t('styles.paste_placeholder') }}</div>
+          <input ref="imageFileInput" type="file" accept="image/*" style="display:none" @change="handleImageFile" />
+          <input ref="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" @change="handleImageFile" />
+          <div style="width:100%">
+            <div
+              ref="pasteZoneRef"
+              tabindex="0"
+              style="width:100%;border:2px dashed var(--color-border);border-radius:8px;padding:12px;cursor:pointer;outline:none;transition:border-color .15s"
+              :style="{ borderColor: pasteActive ? 'var(--color-primary)' : 'var(--color-border)' }"
+              @click="pasteZoneRef.focus()"
+              @focus="pasteActive=true"
+              @blur="pasteActive=false"
+              @paste="handlePaste"
+            >
+              <div v-if="!form.image_base64" style="text-align:center;color:var(--color-text-tertiary);padding:8px 0">
+                <el-icon style="font-size:24px"><Picture /></el-icon>
+                <div style="font-size:13px;margin-top:4px">{{ $t('styles.paste_placeholder') }}</div>
+              </div>
+              <div v-else style="position:relative;display:inline-block">
+                <img :src="form.image_base64" style="max-height:160px;max-width:100%;border-radius:4px" />
+                <el-button
+                  size="small" type="danger" circle icon="Close"
+                  style="position:absolute;top:-8px;right:-8px"
+                  @click.stop="form.image_base64=''"
+                />
+              </div>
             </div>
-            <div v-else style="position:relative;display:inline-block">
-              <img :src="form.image_base64" style="max-height:160px;max-width:100%;border-radius:4px" />
-              <el-button
-                size="small" type="danger" circle icon="Close"
-                style="position:absolute;top:-8px;right:-8px"
-                @click.stop="form.image_base64=''"
-              />
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <el-button size="small" icon="Camera" @click="cameraInput.click()">拍照</el-button>
+              <el-button size="small" icon="Picture" @click="imageFileInput.click()">从相册选择</el-button>
             </div>
           </div>
         </el-form-item>
 
-        <el-form-item :label="$t('styles.materials')">
+        <el-form-item label="款式用量">
           <div style="width:100%">
             <div
               v-for="(m, i) in form.materials" :key="i"
-              style="display:flex;gap:8px;margin-bottom:8px;align-items:center"
+              style="display:grid;grid-template-columns:110px 1fr 150px 150px auto;gap:8px;margin-bottom:8px;align-items:center"
             >
               <el-select
-                v-model="m.cat1_id" :placeholder="$t('common.fabric')" style="width:100px"
+                v-model="m.cat1_id"
+                :placeholder="$t('fabrics.cat1')"
                 @change="m.cat2_id = null"
               >
                 <el-option v-for="c1 in catTree" :key="c1.id" :label="c1.name" :value="c1.id" />
               </el-select>
-              <el-select v-model="m.cat2_id" :placeholder="$t('common.unit')" style="flex:1" :disabled="!m.cat1_id">
+              <el-select v-model="m.cat2_id" :placeholder="$t('fabrics.cat2')" :disabled="!m.cat1_id">
                 <el-option
                   v-for="c2 in (catTree.find(c=>c.id===m.cat1_id)?.children||[])"
                   :key="c2.id" :label="c2.name" :value="c2.id"
                 />
               </el-select>
               <el-input-number
-                v-model="m.usage_per_piece" :min="0.001" :precision="3" :step="0.1"
-                style="width:120px"
+                v-model="m.actual_usage_per_piece"
+                :min="0"
+                :precision="3"
+                :step="0.1"
+                style="width:100%"
+                placeholder="实际用量"
               />
-              <span style="color:#888;white-space:nowrap">{{ $t('common.meter_per_piece') }}</span>
+              <el-input-number
+                v-model="m.estimated_usage_per_piece"
+                :min="0"
+                :precision="3"
+                :step="0.1"
+                style="width:100%"
+                placeholder="客估用量"
+              />
               <el-button icon="Delete" circle size="small" type="danger" plain @click="form.materials.splice(i,1)" />
             </div>
+
+            <div style="display:grid;grid-template-columns:110px 1fr 150px 150px auto;gap:8px;color:var(--color-text-tertiary);font-size:12px;margin:-2px 0 8px">
+              <span></span>
+              <span></span>
+              <span>实际用量 m/件</span>
+              <span>客估用量 m/件</span>
+              <span></span>
+            </div>
+
             <el-button
-              v-if="form.materials.length < 5"
+              v-if="form.materials.length < 8"
               size="small" icon="Plus"
-              @click="form.materials.push({ cat1_id: null, cat2_id: null, usage_per_piece: 1 })"
+              @click="form.materials.push({ cat1_id: null, cat2_id: null, actual_usage_per_piece: null, estimated_usage_per_piece: null })"
             >{{ $t('styles.add_material') }}</el-button>
           </div>
         </el-form-item>
@@ -149,6 +196,8 @@ const saving = ref(false)
 const formRef = ref()
 const pasteZoneRef = ref()
 const pasteActive = ref(false)
+const imageFileInput = ref()
+const cameraInput = ref()
 const searchQ = ref('')
 
 const defaultForm = () => ({
@@ -158,6 +207,12 @@ const form = ref(defaultForm())
 const rules = computed(() => ({
   name: [{ required: true, message: t('styles.val_name') }]
 }))
+
+const materialSummary = (m) => {
+  const actual = m.actual_usage_per_piece != null ? `实际 ${m.actual_usage_per_piece}${t('common.meter_per_piece')}` : ''
+  const estimated = m.estimated_usage_per_piece != null ? `客估 ${m.estimated_usage_per_piece}${t('common.meter_per_piece')}` : ''
+  return `${m.cat1_name}/${m.cat2_name} ${[actual, estimated].filter(Boolean).join(' / ')}`
+}
 
 const load = async () => {
   loading.value = true
@@ -179,13 +234,23 @@ const openDialog = async (row = null) => {
       materials: detail.materials.map(m => ({
         cat1_id: m.cat1_id,
         cat2_id: m.cat2_id,
-        usage_per_piece: m.usage_per_piece
+        actual_usage_per_piece: m.actual_usage_per_piece,
+        estimated_usage_per_piece: m.estimated_usage_per_piece
       }))
     }
   } else {
     form.value = defaultForm()
   }
   dialogVisible.value = true
+}
+
+const handleImageFile = (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (ev) => { form.value.image_base64 = ev.target.result }
+  reader.readAsDataURL(file)
+  e.target.value = ''
 }
 
 const handlePaste = (e) => {
@@ -210,7 +275,9 @@ const save = async () => {
       customer: form.value.customer,
       note: form.value.note,
       image_base64: form.value.image_base64,
-      materials: form.value.materials.filter(m => m.cat2_id && m.usage_per_piece)
+      materials: form.value.materials.filter(m =>
+        m.cat2_id && (m.actual_usage_per_piece != null || m.estimated_usage_per_piece != null)
+      )
     }
     if (form.value.id) {
       await stylesApi.update(form.value.id, payload)
@@ -242,3 +309,7 @@ onMounted(async () => {
   catTree.value = await categoriesApi.tree()
 })
 </script>
+
+<style scoped>
+:deep(.img-hover-popper) { padding: 4px; }
+</style>

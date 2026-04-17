@@ -76,12 +76,35 @@
           <el-table-column prop="style_name" :label="$t('common.style')" min-width="100" show-overflow-tooltip />
           <el-table-column prop="po_number" label="PO" min-width="110" show-overflow-tooltip />
           <el-table-column prop="note" :label="$t('common.note')" min-width="100" show-overflow-tooltip />
+          <el-table-column :label="$t('inventory.images')" width="90">
+            <template #default="{ row }">
+              <el-button v-if="row.images?.length" size="small" link @click="openImages(row)">
+                {{ $t('inventory.image_count', { n: row.images.length }) }}
+              </el-button>
+              <span v-else style="color:var(--color-text-tertiary)">-</span>
+            </template>
+          </el-table-column>
         </el-table>
       </div>
       <template #footer>
         <el-button icon="Download" type="primary" @click="exportFabric(historyFabric)">{{ $t('inventory.export_history') }}</el-button>
         <el-button @click="historyVisible = false">{{ $t('common.close') }}</el-button>
       </template>
+    </el-dialog>
+
+    <el-dialog v-model="imageDialogVisible" :title="$t('inventory.image_preview_title')" width="760px">
+      <div v-if="imageDialogImages.length" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+        <el-image
+          v-for="(img, i) in imageDialogImages"
+          :key="i"
+          :src="imageSrc(img)"
+          :preview-src-list="imagePreviewList"
+          :initial-index="i"
+          fit="cover"
+          preview-teleported
+          style="width:100%;height:180px;border-radius:8px;border:1px solid var(--color-border)"
+        />
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -116,6 +139,11 @@ const historyVisible = ref(false)
 const historyFabric = ref(null)
 const historyLogs = ref([])
 const historyLoading = ref(false)
+const imageDialogVisible = ref(false)
+const imageDialogImages = ref([])
+
+const imageSrc = (img) => `data:${img.mime_type};base64,${img.data_base64}`
+const imagePreviewList = computed(() => imageDialogImages.value.map(imageSrc))
 
 const openHistory = async (fabric) => {
   historyFabric.value = fabric
@@ -123,6 +151,11 @@ const openHistory = async (fabric) => {
   historyLoading.value = true
   historyLogs.value = await stockApi.logs({ fabric_id: fabric.id })
     .finally(() => historyLoading.value = false)
+}
+
+const openImages = (row) => {
+  imageDialogImages.value = row.images || []
+  imageDialogVisible.value = true
 }
 
 const exportFabric = (fabric) => {

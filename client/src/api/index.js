@@ -33,6 +33,8 @@ export const stylesApi = {
   get: (id) => http.get(`/styles/${id}`),
   create: (data) => http.post('/styles', data),
   update: (id, data) => http.put(`/styles/${id}`, data),
+  appendEstimates: (id, data) => http.post(`/styles/${id}/append-estimates`, data),
+  recalcUsage: (id) => http.post(`/styles/${id}/recalculate-usage`),
   remove: (id) => http.delete(`/styles/${id}`),
   timeline: (id) => http.get(`/styles/${id}/timeline`)
 }
@@ -60,4 +62,24 @@ export const reportsApi = {
 export const exportUrl = (params) => {
   const qs = new URLSearchParams(params).toString()
   return `/api/export/xlsx${qs ? '?' + qs : ''}`
+}
+
+export const ocrApi = {
+  stockIn:  (files) => {
+    const fd = new FormData()
+    ;(Array.isArray(files) ? files : [files]).filter(Boolean).forEach(file => fd.append('files', file))
+    return http.post('/ocr/stock-in', fd)
+  },
+  stockOut: (files) => {
+    const fd = new FormData()
+    ;(Array.isArray(files) ? files : [files]).filter(Boolean).forEach(file => fd.append('files', file))
+    return http.post('/ocr/stock-out', fd)
+  }
+}
+
+export const aiSettingsApi = {
+  presets: ()       => http.get('/ai-settings/presets'),
+  get:     ()       => http.get('/ai-settings'),
+  save:    (data)   => http.post('/ai-settings', data),
+  test:    ()       => http.post('/ai-settings/test')
 }

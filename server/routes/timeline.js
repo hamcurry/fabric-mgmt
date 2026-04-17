@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const db = require('../db')
+const { withParsedImagesList } = require('../log-utils')
 
 // 全局时间线（入库 + 出库，混合排序）
 router.get('/', (req, res) => {
@@ -13,7 +14,7 @@ router.get('/', (req, res) => {
   if (date_from) { sql += ' AND operated_at >= ?'; params.push(date_from) }
   if (date_to) { sql += ' AND operated_at <= ?'; params.push(date_to + ' 23:59:59') }
   sql += ' ORDER BY operated_at DESC'
-  res.json(db.prepare(sql).all(...params))
+  res.json(withParsedImagesList(db.prepare(sql).all(...params)))
 })
 
 module.exports = router

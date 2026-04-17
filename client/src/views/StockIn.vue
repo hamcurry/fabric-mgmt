@@ -1,12 +1,15 @@
 <template>
-  <el-card shadow="never" style="max-width:560px">
+  <el-card shadow="never" style="max-width:860px">
     <template #header>
-      <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <b>{{ $t('stock_in.title') }}</b>
-        <el-radio-group v-model="mode" size="small">
-          <el-radio-button value="existing">{{ $t('stock_in.existing_fabric') }}</el-radio-button>
-          <el-radio-button value="new">{{ $t('stock_in.new_and_stock') }}</el-radio-button>
-        </el-radio-group>
+        <el-space wrap>
+          <el-radio-group v-model="mode" size="small">
+            <el-radio-button value="existing">{{ $t('stock_in.existing_fabric') }}</el-radio-button>
+            <el-radio-button value="new">{{ $t('stock_in.new_and_stock') }}</el-radio-button>
+          </el-radio-group>
+          <el-button :loading="ocrLoading" icon="Camera" @click="triggerScan">{{ $t('ocr.scan_stock_in') }}</el-button>
+        </el-space>
       </div>
     </template>
 
@@ -15,7 +18,7 @@
         <el-select v-model="form.fabric_id" :placeholder="$t('stock_in.select_fabric')" filterable style="width:100%">
           <el-option
             v-for="f in fabrics" :key="f.id"
-            :label="`${f.cat1_name}/${f.cat2_name}${f.color ? '·'+f.color : ''} （${f.current_stock}${f.unit}）`"
+            :label="`${f.cat1_name}/${f.cat2_name}${f.color ? '·' + f.color : ''}（${f.current_stock}${f.unit}）`"
             :value="f.id"
           />
         </el-select>
@@ -43,9 +46,7 @@
       </el-form-item>
       <el-form-item :label="$t('stock_in.cat2')" prop="cat2_id">
         <el-select v-model="newForm.cat2_id" :placeholder="$t('stock_in.select_cat2')" style="width:100%" :disabled="!newForm.cat1_id">
-          <el-option
-            v-for="c in cat2Options" :key="c.id" :label="c.name" :value="c.id"
-          />
+          <el-option v-for="c in cat2Options" :key="c.id" :label="c.name" :value="c.id" />
         </el-select>
       </el-form-item>
       <el-form-item :label="$t('common.color')">
@@ -71,6 +72,110 @@
         <el-button @click="resetNew">{{ $t('stock_in.reset_btn') }}</el-button>
       </el-form-item>
     </el-form>
+
+    <input
+      ref="ocrFileInput"
+      type="file"
+      multiple
+      accept="image/*,.pdf,application/pdf"
+      capture="environment"
+      style="display:none"
+      @change="handleOcrFile"
+    />
+
+    <el-dialog
+      v-model="ocrDialogVisible"
+      :title="$t('ocr.dialog_title_in')"
+      :width="dialogWidth"
+      :close-on-click-modal="false"
+    >
+      <div v-if="ocrResult">
+        <el-descriptions :column="1" border size="small" style="margin-bottom:16px">
+          <el-descriptions-item :label="$t('ocr.supplier')">
+            <el-input v-model="ocrResult.supplier" size="small" />
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('stock_in.source_images')">
+            {{ $t('inventory.image_count', { n: ocrResult.source_images?.length || 0 }) }}
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <el-table :data="ocrResult.items" size="small" border>
+          <el-table-column :label="$t('stock_in.cat1')" min-width="170">
+            <template #default="{ row }">
+              <div style="display:flex;gap:6px;align-items:center">
+                <el-select
+                  v-model="row.cat1_id"
+                  filterable
+                  style="flex:1"
+                  :placeholder="$t('stock_in.select_cat1')"
+                  @change="onOcrCat1Change(row)"
+                >
+                  <el-option v-for="c in cat1List" :key="c.id" :label="c.name" :value="c.id" />
+                </el-select>
+                <el-button size="small" link @click="quickAddCat1(row)">+{{ $t('common.add') }}</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('stock_in.fabric_category')" min-width="180">
+            <template #default="{ row }">
+              <div style="display:flex;gap:6px;align-items:center">
+                <el-select v-model="row.cat2_id" filterable style="flex:1" :placeholder="$t('stock_in.select_cat2_for_ocr')">
+                  <el-option
+                    v-for="c in getCat2OptionsByCat1(row.cat1_id)"
+                    :key="c.id"
+                    :label="c.name"
+                    :value="c.id"
+                  />
+                </el-select>
+                <el-button size="small" link @click="quickAddCat2(row)">+{{ $t('common.add') }}</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('ocr.fabric_type')" prop="fabric_type" min-width="110">
+            <template #default="{ row }">
+              <el-input v-model="row.fabric_type" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.color')" min-width="120">
+            <template #default="{ row }">
+              <el-select
+                v-model="row.color"
+                size="small"
+                filterable
+                allow-create
+                clearable
+                default-first-option
+                style="width:100%"
+                :placeholder="$t('stock_in.select_or_create_color')"
+              >
+                <el-option v-for="c in getColorsByCat2(row.cat2_id)" :key="c" :label="c" :value="c" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('stock_in.stock_qty')" prop="quantity" width="110">
+            <template #default="{ row }">
+              <el-input-number v-model="row.quantity" :min="0" :precision="2" size="small" style="width:98px" />
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.unit')" prop="unit" width="85">
+            <template #default="{ row }">
+              <el-input v-model="row.unit" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.note')" prop="note" min-width="120">
+            <template #default="{ row }">
+              <el-input v-model="row.note" size="small" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <template #footer>
+        <el-button :loading="exportingExcel" @click="exportExcel">{{ $t('ocr.export_excel') }}</el-button>
+        <el-button @click="ocrDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="savingOcrRecords" @click="applyOcrToForm">{{ $t('stock_in.batch_confirm_btn') }}</el-button>
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
@@ -78,7 +183,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { fabricsApi, categoriesApi, stockApi } from '../api'
+import { fabricsApi, categoriesApi, stockApi, ocrApi } from '../api'
 
 const { t } = useI18n()
 
@@ -86,6 +191,7 @@ const mode = ref('existing')
 const fabrics = ref([])
 const catTree = ref([])
 const saving = ref(false)
+const savingOcrRecords = ref(false)
 
 const formRef = ref()
 const form = ref({ fabric_id: null, quantity: 1, note: '' })
@@ -107,6 +213,190 @@ const cat1List = computed(() => catTree.value)
 const cat2Options = computed(() =>
   catTree.value.find(c => c.id === newForm.value.cat1_id)?.children || []
 )
+const allCat2Options = computed(() =>
+  catTree.value.flatMap(cat1 => (cat1.children || []).map(cat2 => ({
+    ...cat2,
+    cat1_name: cat1.name
+  })))
+)
+
+const ocrFileInput = ref(null)
+const ocrLoading = ref(false)
+const ocrDialogVisible = ref(false)
+const ocrResult = ref(null)
+const exportingExcel = ref(false)
+
+const dialogWidth = computed(() => {
+  if (typeof window !== 'undefined' && window.innerWidth < 640) return '98%'
+  return '980px'
+})
+
+const guessCat2 = (fabricType) => {
+  const needle = String(fabricType || '').trim().toLowerCase()
+  if (!needle) return { cat1_id: null, cat2_id: null }
+  const match = allCat2Options.value.find(c => {
+    const name = String(c.name || '').toLowerCase()
+    return name.includes(needle) || needle.includes(name)
+  })
+  return {
+    cat1_id: match?.cat1_id || null,
+    cat2_id: match?.id || null
+  }
+}
+
+const getColorsByCat2 = (cat2Id) => {
+  const colors = fabrics.value
+    .filter(f => f.cat2_id === cat2Id && f.color)
+    .map(f => f.color)
+  return [...new Set(colors)]
+}
+
+const getCat2OptionsByCat1 = (cat1Id) =>
+  catTree.value.find(c => c.id === cat1Id)?.children || []
+
+const onOcrCat1Change = (row) => {
+  const options = getCat2OptionsByCat1(row.cat1_id)
+  if (!options.find(c => c.id === row.cat2_id)) row.cat2_id = null
+}
+
+const quickAddCat1 = async (row) => {
+  const name = window.prompt('新增一级类目')
+  if (!name?.trim()) return
+  try {
+    const created = await categoriesApi.createCat1({ name: name.trim() })
+    catTree.value = await categoriesApi.tree()
+    row.cat1_id = created.id
+    row.cat2_id = null
+    ElMessage.success(t('common.create_success'))
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
+const quickAddCat2 = async (row) => {
+  if (!row.cat1_id) {
+    ElMessage.error(t('stock_in.val_cat1'))
+    return
+  }
+  const name = window.prompt('新增二级类目')
+  if (!name?.trim()) return
+  try {
+    const created = await categoriesApi.createCat2({ cat1_id: row.cat1_id, name: name.trim() })
+    catTree.value = await categoriesApi.tree()
+    row.cat2_id = created.id
+    ElMessage.success(t('common.create_success'))
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
+const triggerScan = () => ocrFileInput.value.click()
+
+const handleOcrFile = async (e) => {
+  const files = Array.from(e.target.files || [])
+  if (!files.length) return
+  e.target.value = ''
+  if (files.some(file => file.type !== 'application/pdf' && file.size > 4 * 1024 * 1024)) {
+    ElMessage.warning(t('ocr.image_too_large'))
+  }
+  ocrLoading.value = true
+  try {
+    const data = await ocrApi.stockIn(files)
+    data.items = (data.items || []).map(item => ({
+      ...item,
+      ...guessCat2(item.fabric_type)
+    }))
+    if (!data.items.length) {
+      data.items = [{ fabric_type: '', color: '', quantity: 0, unit: '米', note: '', cat2_id: null }]
+    }
+    ocrResult.value = data
+    ocrDialogVisible.value = true
+  } catch (err) {
+    ElMessage.error(err.message || t('ocr.error'))
+  } finally {
+    ocrLoading.value = false
+  }
+}
+
+const resolveOrCreateFabricId = async (row) => {
+  const existing = fabrics.value.find(f =>
+    f.cat2_id === row.cat2_id && (f.color || '') === (row.color || '')
+  )
+  if (existing) return existing.id
+
+  const created = await fabricsApi.create({
+    cat2_id: row.cat2_id,
+    color: row.color || '',
+    unit: row.unit || '米',
+    current_stock: 0,
+    alert_threshold: 20
+  })
+  return created.id
+}
+
+const applyOcrToForm = async () => {
+  const items = ocrResult.value?.items || []
+  if (!items.length) return
+
+  const invalid = items.find(item => !item.cat2_id || !(Number(item.quantity) > 0))
+  if (invalid) {
+    ElMessage.error(t('stock_in.ocr_invalid_items'))
+    return
+  }
+
+  savingOcrRecords.value = true
+  try {
+    for (const row of items) {
+      const fabricId = await resolveOrCreateFabricId(row)
+      const note = [ocrResult.value.supplier, row.note].filter(Boolean).join(' / ')
+      await stockApi.in({
+        fabric_id: fabricId,
+        quantity: Number(row.quantity),
+        note,
+        images: ocrResult.value.source_images || []
+      })
+    }
+    ElMessage.success(t('stock_in.batch_success', { n: items.length }))
+    ocrDialogVisible.value = false
+    ocrResult.value = null
+    fabrics.value = await fabricsApi.list()
+    catTree.value = await categoriesApi.tree()
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    savingOcrRecords.value = false
+  }
+}
+
+const exportExcel = async () => {
+  if (!ocrResult.value?.items?.length) return
+  exportingExcel.value = true
+  try {
+    const scanTime = new Date().toLocaleString('zh-CN')
+    const res = await fetch('/api/ocr/stock-in/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        supplier: ocrResult.value.supplier || '',
+        scan_time: scanTime,
+        items: ocrResult.value.items
+      })
+    })
+    if (!res.ok) {
+      ElMessage.error(t('stock_in.export_failed'))
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `stock_in_ocr_${Date.now()}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+  } finally {
+    exportingExcel.value = false
+  }
+}
 
 const submitExisting = async () => {
   await formRef.value.validate()

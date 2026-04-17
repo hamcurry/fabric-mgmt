@@ -1,16 +1,25 @@
 <template>
-  <el-card shadow="never" style="max-width:800px">
-    <template #header><b>{{ $t('stock_out.title') }}</b></template>
+  <el-card shadow="never" style="max-width:980px">
+    <template #header>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <b>{{ $t('stock_out.title') }}</b>
+        <el-button :loading="ocrLoading" icon="Camera" @click="triggerScan">{{ $t('ocr.scan_stock_out') }}</el-button>
+      </div>
+    </template>
 
     <el-form :model="form" :rules="rules" ref="formRef" label-width="90px">
       <el-form-item :label="$t('stock_out.associate_style')" prop="style_id">
         <el-select
-          v-model="form.style_id" :placeholder="$t('stock_out.select_style')" filterable style="width:100%"
+          v-model="form.style_id"
+          :placeholder="$t('stock_out.select_style')"
+          filterable
+          clearable
+          style="width:100%"
           @change="onStyleChange"
         >
           <el-option
             v-for="s in styles" :key="s.id"
-            :label="`${s.name}${s.customer ? ' · '+s.customer : ''}`"
+            :label="`${s.name}${s.customer ? ' · ' + s.customer : ''}`"
             :value="s.id"
           />
         </el-select>
@@ -54,47 +63,56 @@
       <el-divider>{{ $t('stock_out.out_details') }}</el-divider>
 
       <div v-for="mat in materials" :key="mat.cat2_id" style="margin-bottom:24px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
           <el-tag type="primary">{{ mat.cat1_name }}/{{ mat.cat2_name }}</el-tag>
-          <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('stock_out.usage_label') }} {{ mat.usage_per_piece }} {{ $t('common.meter_per_piece') }}</span>
-          <el-tag size="small" :type="totalStock(mat) > 0 ? 'info' : 'danger'">
-            {{ $t('stock_out.total_stock') }} {{ totalStock(mat) }} {{ $t('common.meter') }}
+          <span style="color:var(--color-text-secondary);font-size:13px">
+            {{ mat.usage_source === 'actual' ? '实际' : '估算' }} {{ $t('stock_out.usage_label') }} {{ mat.usage_per_piece }} {{ $t('common.meter_per_piece') }}
+          </span>
+          <el-tag size="small" :type="hasUnmatched(mat) ? 'danger' : (totalStock(mat) > 0 ? 'info' : 'danger')">
+            {{ hasUnmatched(mat) ? '缺少颜色匹配' : '总库存 ' + totalStock(mat) + ' ' + $t('common.meter') }}
           </el-tag>
         </div>
 
         <div
           v-for="(sel, i) in fabricSelections[mat.cat2_id]"
           :key="i"
-          style="display:flex;gap:8px;align-items:center;margin-bottom:6px;margin-left:16px"
+          style="display:flex;gap:8px;align-items:center;margin-bottom:6px;margin-left:16px;flex-wrap:wrap"
         >
-          <span style="width:60px;font-size:13px;color:var(--color-text-primary)">{{ colorRows[i]?.colorName || '-' }}</span>
+          <el-input
+            v-model="sel.overrideColor"
+            size="small"
+            style="width:120px"
+            @change="onSelColorChange(mat, sel)"
+          />
           <span style="font-size:13px;color:var(--color-text-secondary);width:55px">{{ sel.pieces }} {{ $t('common.pieces') }}</span>
           <span style="font-size:13px;min-width:85px">
             = <b style="color:var(--color-primary)">{{ sel.quantity.toFixed(3) }}</b> {{ $t('common.meter') }}
           </span>
-          <el-select v-model="sel.fabric_id" :placeholder="$t('common.fabric')" style="width:200px" filterable>
-            <el-option
-              v-for="f in mat.fabrics" :key="f.id"
-              :label="`${f.color || $t('stock_out.no_color')}（${f.current_stock}${$t('common.meter')}）`"
-              :value="f.id"
-            />
-          </el-select>
+          <span style="font-size:13px;min-width:200px;color:var(--color-text-secondary)">
+            {{ sel.fabric_name || '未匹配' }}
+          </span>
           <el-tag
-            v-if="sel.fabric_id && sel.quantity > 0"
+            v-if="sel.quantity > 0 && sel.fabric_id"
             size="small"
-            :type="(mat.fabrics.find(f=>f.id===sel.fabric_id)?.current_stock||0) >= sel.quantity ? 'success' : 'danger'"
+            :type="(sel.stock || 0) >= sel.quantity ? 'success' : 'warning'"
           >
-            {{ (mat.fabrics.find(f=>f.id===sel.fabric_id)?.current_stock||0) >= sel.quantity ? $t('common.sufficient') : $t('common.insufficient') }}
+            {{ (sel.stock || 0) >= sel.quantity ? $t('common.sufficient') : '库存不足，将记为负库存' }}
           </el-tag>
+          <el-button
+            v-if="!sel.fabric_id && sel.overrideColor && sel.pieces > 0"
+            size="small" type="warning" plain
+            :loading="sel.creating"
+            @click="createFabricForColor(mat, sel)"
+          >创建面料</el-button>
         </div>
 
         <div style="margin-left:16px;font-size:13px;color:var(--color-text-secondary);margin-top:4px">
-          {{ $t('stock_out.total_label') }}：<b>{{ sumPieces(mat.cat2_id) }}</b> {{ $t('common.pieces') }} · <b>{{ sumMeters(mat.cat2_id) }}</b> {{ $t('common.meter') }}
+          {{ $t('stock_out.total_label') }}：<b>{{ sumPieces(mat.cat2_id) }}</b> {{ $t('common.pieces') }}  / <b>{{ sumMeters(mat.cat2_id) }}</b> {{ $t('common.meter') }}
         </div>
       </div>
 
       <el-divider />
-      <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('stock_out.total_items', { n: allItems.length }) }}</span>
         <el-space>
           <el-button @click="reset">{{ $t('stock_out.reset_btn') }}</el-button>
@@ -104,8 +122,118 @@
     </div>
 
     <div v-else-if="form.style_id && !loadingMaterials" style="color:var(--color-text-tertiary);padding:20px;text-align:center">
-      {{ $t('stock_out.not_configured') }}
+      该款式暂无用量数据，请先在款式详情中配置面料用量。
     </div>
+
+    <input
+      ref="ocrFileInput"
+      type="file"
+      multiple
+      accept="image/*,.pdf,application/pdf"
+      capture="environment"
+      style="display:none"
+      @change="handleOcrFile"
+    />
+
+    <el-dialog
+      v-model="ocrDialogVisible"
+      :title="$t('ocr.dialog_title_out')"
+      width="1100px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="ocrResult">
+        <el-form label-width="100px" size="small">
+          <el-form-item label="识别款号">
+            <div style="display:flex;gap:8px;align-items:center;width:100%">
+              <span style="color:var(--color-text-secondary);white-space:nowrap;font-size:13px">
+                {{ ocrResult.style_name || '未识别' }}
+              </span>
+              <el-button
+                v-if="ocrResult.style_name"
+                size="small"
+                :loading="styleCreating"
+                @click="handleCreateOrUpdateStyle"
+              >创建/更新款式</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item :label="$t('common.po_number')">
+            <el-input v-model="ocrResult.po_number" />
+          </el-form-item>
+        </el-form>
+
+        <el-divider>面料用量</el-divider>
+        <div style="margin-bottom:10px;color:var(--color-text-secondary);font-size:13px">
+          识别到 {{ totalOcrPieces }} 件，请补充面料分类：
+        </div>
+        <el-table :data="ocrResult.usage_items" size="small" border>
+          <el-table-column label="面料类型" prop="fabric_type" min-width="120">
+            <template #default="{ row }">
+              <el-input v-model="row.fabric_type" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="面料分类" min-width="150">
+            <template #default="{ row }">
+              <div style="display:flex;gap:6px;align-items:center">
+                <el-select v-model="row.cat1_id" filterable size="small" style="flex:1" placeholder="大类" @change="onOcrCat1Change(row)">
+                  <el-option v-for="c in catTree" :key="c.id" :label="c.name" :value="c.id" />
+                </el-select>
+                <el-button size="small" link @click="quickAddCat1(row)">+新建</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="面料细类" min-width="170">
+            <template #default="{ row }">
+              <div style="display:flex;gap:6px;align-items:center">
+                <el-select v-model="row.cat2_id" filterable size="small" style="flex:1" placeholder="细类">
+                  <el-option v-for="c in getCat2OptionsByCat1(row.cat1_id)" :key="c.id" :label="c.name" :value="c.id" />
+                </el-select>
+                <el-button size="small" link @click="quickAddCat2(row)">+新建</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="OCR用量" width="120">
+            <template #default="{ row }">
+              <el-input-number v-model="row.quantity" :min="0" :precision="2" size="small" style="width:100px" />
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.unit')" width="80">
+            <template #default="{ row }">
+              <el-input v-model="row.unit" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="估算 m/件" width="130">
+            <template #default="{ row }">
+              {{ estimatedPerPiece(row) }}
+            </template>
+          </el-table-column>
+          <el-table-column width="46">
+            <template #default="{ $index }">
+              <el-button icon="Delete" size="small" type="danger" plain circle @click="ocrResult.usage_items.splice($index, 1)" />
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-button size="small" link icon="Plus" style="margin-top:8px" @click="addOcrUsageItem">添加用量行</el-button>
+
+        <el-divider>{{ $t('ocr.color_pieces') }}</el-divider>
+        <el-table :data="ocrResult.colors" size="small" border>
+          <el-table-column :label="$t('common.color')" prop="color" width="150">
+            <template #default="{ row }">
+              <el-input v-model="row.color" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.pieces')" prop="pieces">
+            <template #default="{ row }">
+              <el-input-number v-model="row.pieces" :min="0" :precision="0" size="small" style="width:110px" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <template #footer>
+        <el-button @click="ocrDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="ocrApplying" @click="applyOcrToForm">应用到表单</el-button>
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
@@ -113,14 +241,17 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { stylesApi, fabricsApi, stockApi } from '../api'
+import { stylesApi, fabricsApi, stockApi, ocrApi, categoriesApi } from '../api'
 
 const { t } = useI18n()
 
 const styles = ref([])
 const materials = ref([])
+const fabrics = ref([])
+const catTree = ref([])
 const saving = ref(false)
 const loadingMaterials = ref(false)
+const ocrApplying = ref(false)
 const formRef = ref()
 
 const form = ref({ style_id: null, po_number: '', note: '' })
@@ -132,12 +263,24 @@ const rules = computed(() => ({
 const colorRows = reactive([{ colorName: null, pieces: 0 }])
 const fabricSelections = reactive({})
 
+const ocrFileInput = ref(null)
+const ocrLoading = ref(false)
+const ocrDialogVisible = ref(false)
+const ocrResult = ref(null)
+const styleCreating = ref(false)
+
+const allCat2Options = computed(() =>
+  catTree.value.flatMap(cat1 => (cat1.children || []).map(cat2 => ({
+    ...cat2,
+    cat1_id: cat1.id,
+    cat1_name: cat1.name
+  })))
+)
+
 const allColors = computed(() => {
   const set = new Set()
   for (const mat of materials.value) {
-    for (const f of mat.fabrics) {
-      if (f.color) set.add(f.color)
-    }
+    for (const f of mat.fabrics) if (f.color) set.add(f.color)
   }
   return [...set]
 })
@@ -151,15 +294,33 @@ const sumPieces = (cat2_id) =>
 const sumMeters = (cat2_id) =>
   parseFloat((fabricSelections[cat2_id] || []).reduce((s, r) => s + (r.quantity || 0), 0).toFixed(3))
 
+const totalOcrPieces = computed(() =>
+  (ocrResult.value?.colors || []).reduce((sum, row) => sum + (Number(row.pieces) || 0), 0)
+)
+
+const pickFabric = (mat, colorName) => {
+  if (!colorName) return null
+  const exact = mat.fabrics.filter(f => (f.color || '') === colorName)
+  if (!exact.length) return null
+  return [...exact].sort((a, b) => b.current_stock - a.current_stock)[0]
+}
+
 const syncMappings = () => {
   for (const mat of materials.value) {
     fabricSelections[mat.cat2_id] = colorRows.map(row => {
       const pieces = row.pieces || 0
-      const matched = mat.fabrics.find(f => f.color === row.colorName)
+      const fabric = pickFabric(mat, row.colorName)
       return {
-        fabric_id: matched?.id || null,
+        fabric_id: fabric?.id || null,
+        fabric_name: fabric ? `${fabric.cat1_name}/${fabric.cat2_name}${fabric.color ? ' / ' + fabric.color : ''}` : '',
+        stock: fabric?.current_stock || 0,
+        color: row.colorName || '',
+        overrideColor: row.colorName || '',
         pieces,
-        quantity: parseFloat((pieces * mat.usage_per_piece).toFixed(3))
+        quantity: parseFloat((pieces * mat.usage_per_piece).toFixed(3)),
+        usage_source: mat.usage_source,
+        usage_per_piece_snapshot: mat.usage_per_piece,
+        style_material_cat2_id: mat.cat2_id
       }
     })
   }
@@ -170,50 +331,223 @@ watch(colorRows, syncMappings, { deep: true })
 const addColorRow = () => { colorRows.push({ colorName: null, pieces: 0 }) }
 const removeColorRow = (i) => { colorRows.splice(i, 1); syncMappings() }
 
+const hasUnmatched = (mat) =>
+  (fabricSelections[mat.cat2_id] || []).some(r => r.pieces > 0 && !r.fabric_id)
+
 const allItems = computed(() =>
   Object.values(fabricSelections).flat().filter(r => r.fabric_id && r.quantity > 0)
 )
+
+const getCat2OptionsByCat1 = (cat1Id) =>
+  catTree.value.find(c => c.id === cat1Id)?.children || []
+
+const guessCat = (fabricType) => {
+  const needle = String(fabricType || '').trim().toLowerCase()
+  if (!needle) return { cat1_id: null, cat2_id: null }
+  const match = allCat2Options.value.find(c => {
+    const name = String(c.name || '').toLowerCase()
+    return name.includes(needle) || needle.includes(name)
+  })
+  return { cat1_id: match?.cat1_id || null, cat2_id: match?.id || null }
+}
+
+const estimatedPerPiece = (row) => {
+  if (!Number(row.quantity)) return '-'
+  return `${parseFloat(Number(row.quantity).toFixed(6))}${t('common.meter_per_piece')}`
+}
+
+const onOcrCat1Change = (row) => {
+  const options = getCat2OptionsByCat1(row.cat1_id)
+  if (!options.find(c => c.id === row.cat2_id)) row.cat2_id = null
+}
+
+const quickAddCat1 = async (row) => {
+  const name = window.prompt('Add category level 1')
+  if (!name?.trim()) return
+  try {
+    const created = await categoriesApi.createCat1({ name: name.trim() })
+    catTree.value = await categoriesApi.tree()
+    row.cat1_id = created.id
+    row.cat2_id = null
+    ElMessage.success(t('common.create_success'))
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
+const quickAddCat2 = async (row) => {
+  if (!row.cat1_id) {
+    ElMessage.error('Please select category level 1 first')
+    return
+  }
+  const name = window.prompt('Add category level 2')
+  if (!name?.trim()) return
+  try {
+    const created = await categoriesApi.createCat2({ cat1_id: row.cat1_id, name: name.trim() })
+    catTree.value = await categoriesApi.tree()
+    row.cat2_id = created.id
+    ElMessage.success(t('common.create_success'))
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
 
 const onStyleChange = async () => {
   if (!form.value.style_id) { materials.value = []; return }
   loadingMaterials.value = true
   try {
     const style = await stylesApi.get(form.value.style_id)
-    const allFabrics = await fabricsApi.list()
-    materials.value = style.materials.map(m => ({
-      cat2_id: m.cat2_id,
-      cat2_name: m.cat2_name,
-      cat1_name: m.cat1_name,
-      usage_per_piece: m.usage_per_piece,
-      fabrics: allFabrics.filter(f => f.cat2_id === m.cat2_id)
-    }))
+    materials.value = style.materials
+      .filter(m => m.actual_usage_per_piece != null || m.estimated_usage_per_piece != null)
+      .map(m => ({
+        cat2_id: m.cat2_id,
+        cat2_name: m.cat2_name,
+        cat1_name: m.cat1_name,
+        usage_per_piece: m.actual_usage_per_piece ?? m.estimated_usage_per_piece,
+        usage_source: m.actual_usage_per_piece != null ? 'actual' : 'estimated',
+        fabrics: fabrics.value.filter(f => f.cat2_id === m.cat2_id)
+      }))
     syncMappings()
   } finally {
     loadingMaterials.value = false
   }
 }
 
+function cropImageByBbox(dataUrl, bbox) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const sx = Math.round(img.naturalWidth * bbox.x)
+      const sy = Math.round(img.naturalHeight * bbox.y)
+      const sw = Math.round(img.naturalWidth * bbox.w)
+      const sh = Math.round(img.naturalHeight * bbox.h)
+      const canvas = document.createElement('canvas')
+      canvas.width = sw
+      canvas.height = sh
+      canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh)
+      resolve(canvas.toDataURL('image/jpeg', 0.92))
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
+
+const createOrUpdateEstimatedStyle = async () => {
+  const styleName = ocrResult.value?.style_name?.trim()
+  if (!styleName) {
+    ElMessage.error('未识别到款号')
+    return null
+  }
+
+  const materialsPayload = (ocrResult.value.usage_items || [])
+    .filter(row => row.cat2_id && Number(row.quantity) > 0)
+    .map(row => ({
+      cat2_id: row.cat2_id,
+      estimated_usage_per_piece: parseFloat(Number(row.quantity).toFixed(6))
+    }))
+
+  if (!materialsPayload.length) {
+    ElMessage.error('请先补充面料分类和用量')
+    return null
+  }
+
+  const srcImg = ocrResult.value.source_images?.[0]
+  const fullDataUrl = srcImg?.data_base64 && srcImg.mime_type?.startsWith('image/')
+    ? `data:${srcImg.mime_type};base64,${srcImg.data_base64}`
+    : ''
+  const bbox = ocrResult.value.style_image_bbox
+  const image_base64 = fullDataUrl
+    ? (bbox?.found ? await cropImageByBbox(fullDataUrl, bbox) : fullDataUrl)
+    : ''
+  let styleId = styles.value.find(s => s.name === styleName)?.id || null
+  if (!styleId) {
+    const created = await stylesApi.create({
+      name: styleName,
+      customer: '',
+      note: `OCR导入，共${totalOcrPieces.value}件`,
+      image_base64,
+      materials: materialsPayload
+    })
+    styleId = created.id
+    ElMessage.success(`款式「${styleName}」已创建`)
+  } else {
+    await stylesApi.appendEstimates(styleId, { materials: materialsPayload })
+    ElMessage.success(`款式「${styleName}」用量已更新`)
+  }
+  styles.value = await stylesApi.list()
+  return styleId
+}
+
+const handleCreateOrUpdateStyle = async () => {
+  styleCreating.value = true
+  try {
+    await createOrUpdateEstimatedStyle()
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    styleCreating.value = false
+  }
+}
+
+const addOcrUsageItem = () => {
+  if (ocrResult.value) {
+    ocrResult.value.usage_items.push({ fabric_type: '', cat1_id: null, cat2_id: null, quantity: 0, unit: '米' })
+  }
+}
+
+const createFabricForColor = async (mat, sel) => {
+  sel.creating = true
+  try {
+    const created = await fabricsApi.create({ cat2_id: mat.cat2_id, color: sel.overrideColor, unit: '米' })
+    if (!created?.id) throw new Error('创建失败')
+    ElMessage.success(`面料「${mat.cat2_name} / ${sel.overrideColor}」已创建，当前库存 0`)
+    const freshFabrics = await fabricsApi.list()
+    fabrics.value = freshFabrics
+    for (const m of materials.value) {
+      m.fabrics = fabrics.value.filter(f => f.cat2_id === m.cat2_id)
+    }
+    syncMappings()
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    sel.creating = false
+  }
+}
+
+const onSelColorChange = (mat, sel) => {
+  const fabric = pickFabric(mat, sel.overrideColor)
+  sel.fabric_id = fabric?.id || null
+  sel.fabric_name = fabric ? `${fabric.cat1_name}/${fabric.cat2_name}${fabric.color ? ' / ' + fabric.color : ''}` : ''
+  sel.stock = fabric?.current_stock || 0
+}
+
 const submit = async () => {
   await formRef.value.validate()
   const items = allItems.value
   if (!items.length) { ElMessage.warning(t('stock_out.warn_pieces')); return }
-  for (const mat of materials.value) {
-    for (const sel of fabricSelections[mat.cat2_id] || []) {
-      if (sel.pieces > 0 && !sel.fabric_id) {
-        ElMessage.error(t('stock_out.err_no_match', { name: mat.cat2_name }))
-        return
-      }
-    }
+  const unmatchedMats = materials.value.filter(mat => hasUnmatched(mat))
+  if (unmatchedMats.length) {
+    ElMessage.warning(`${unmatchedMats.map(m => m.cat2_name).join('、')} 有颜色未匹配面料，这些颜色将跳过出库`)
   }
   saving.value = true
   try {
     await stockApi.outBatch({
-      items,
+      items: items.map(item => ({
+        fabric_id: item.fabric_id,
+        quantity: item.quantity,
+        pieces: item.pieces,
+        usage_source: item.usage_source,
+        usage_per_piece_snapshot: item.usage_per_piece_snapshot,
+        style_material_cat2_id: item.style_material_cat2_id,
+        calc_snapshot: [item]
+      })),
       style_id: form.value.style_id,
       po_number: form.value.po_number,
-      note: form.value.note
+      note: form.value.note,
+      images: attachedImages.value
     })
     ElMessage.success(t('stock_out.success'))
+    await refreshBaseData()
     await onStyleChange()
     form.value.po_number = ''
     form.value.note = ''
@@ -224,13 +558,82 @@ const submit = async () => {
   }
 }
 
+const attachedImages = ref([])
+
 const reset = () => {
   form.value = { style_id: null, po_number: '', note: '' }
   materials.value = []
   colorRows.splice(0, colorRows.length, { colorName: null, pieces: 0 })
   Object.keys(fabricSelections).forEach(k => delete fabricSelections[k])
+  attachedImages.value = []
   formRef.value?.clearValidate()
 }
 
-onMounted(async () => { styles.value = await stylesApi.list() })
+const triggerScan = () => ocrFileInput.value.click()
+
+const handleOcrFile = async (e) => {
+  const files = Array.from(e.target.files || [])
+  if (!files.length) return
+  e.target.value = ''
+  if (files.some(file => file.type !== 'application/pdf' && file.size > 4 * 1024 * 1024)) {
+    ElMessage.warning(t('ocr.image_too_large'))
+  }
+  ocrLoading.value = true
+  try {
+    const data = await ocrApi.stockOut(files)
+    data.colors = Array.isArray(data.colors) ? data.colors : []
+    data.usage_items = Array.isArray(data.usage_items) ? data.usage_items.map(item => ({
+      ...item,
+      ...guessCat(item.fabric_type)
+    })) : []
+    if (!data.po_number) data.po_number = ''
+    ocrResult.value = data
+    ocrDialogVisible.value = true
+  } catch (err) {
+    ElMessage.error(err.message || t('ocr.error'))
+  } finally {
+    ocrLoading.value = false
+  }
+}
+
+const applyOcrToForm = async () => {
+  if (!ocrResult.value) return
+  ocrApplying.value = true
+  try {
+    const styleId = await createOrUpdateEstimatedStyle()
+    if (styleId) {
+      form.value.style_id = styleId
+      await onStyleChange()
+    }
+    form.value.po_number = ocrResult.value.po_number || ''
+    attachedImages.value = ocrResult.value.source_images || []
+    if (ocrResult.value.colors?.length) {
+      colorRows.splice(0, colorRows.length,
+        ...ocrResult.value.colors.map(c => ({ colorName: c.color, pieces: c.pieces || 0 }))
+      )
+      syncMappings()
+    }
+    ocrDialogVisible.value = false
+    ElMessage.success(t('ocr.applied'))
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    ocrApplying.value = false
+  }
+}
+
+const refreshBaseData = async () => {
+  const [styleList, fabricList, categories] = await Promise.all([
+    stylesApi.list(),
+    fabricsApi.list(),
+    categoriesApi.tree()
+  ])
+  styles.value = styleList
+  fabrics.value = fabricList
+  catTree.value = categories
+}
+
+onMounted(async () => {
+  await refreshBaseData()
+})
 </script>

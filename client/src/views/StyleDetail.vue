@@ -26,11 +26,13 @@
             <el-descriptions-item :label="$t('common.customer')">{{ style.customer || '-' }}</el-descriptions-item>
             <el-descriptions-item :label="$t('common.created_at')">{{ style.created_at }}</el-descriptions-item>
             <el-descriptions-item :label="$t('common.note')" :span="2">{{ style.note || '-' }}</el-descriptions-item>
-            <el-descriptions-item :label="$t('styles.materials')" :span="2">
-              <el-tag v-for="m in style.materials" :key="m.id" style="margin-right:8px">
-                {{ m.cat1_name }}/{{ m.cat2_name }} {{ m.usage_per_piece }}{{ $t('common.meter_per_piece') }}
-              </el-tag>
-              <span v-if="!style.materials?.length" style="color:var(--color-text-tertiary)">{{ $t('styles.not_set') }}</span>
+            <el-descriptions-item label="款式用量" :span="2">
+              <div v-if="style.materials?.length" style="display:flex;flex-wrap:wrap;gap:8px">
+                <el-tag v-for="m in style.materials" :key="m.id" style="margin-right:0">
+                  {{ materialSummary(m) }}
+                </el-tag>
+              </div>
+              <span v-else style="color:var(--color-text-tertiary)">{{ $t('styles.not_set') }}</span>
             </el-descriptions-item>
           </el-descriptions>
         </el-col>
@@ -63,7 +65,8 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="note" :label="$t('common.note')" width="120" show-overflow-tooltip />
+        <el-table-column prop="usage_source" label="用量来源" width="100" />
+        <el-table-column prop="note" :label="$t('common.note')" width="140" show-overflow-tooltip />
       </el-table>
     </el-card>
   </div>
@@ -79,18 +82,25 @@ const style = ref(null)
 const timeline = ref([])
 const loading = ref(false)
 
+const materialSummary = (m) => {
+  const actual = m.actual_usage_per_piece != null ? `实际 ${m.actual_usage_per_piece}m/件` : ''
+  const estimated = m.estimated_usage_per_piece != null ? `客估 ${m.estimated_usage_per_piece}m/件` : ''
+  return `${m.cat1_name}/${m.cat2_name} ${[actual, estimated].filter(Boolean).join(' / ')}`
+}
+
 const grouped = computed(() => {
   const map = {}
   for (const log of timeline.value) {
-    const key = log.po_number || `_${log.id}`
+    const key = `${log.po_number || `_${log.id}`}_${log.operated_at.slice(0, 10)}`
     if (!map[key]) map[key] = {
       date: log.operated_at.slice(0, 10),
       po: log.po_number || '-',
       items: [],
-      note: log.note || ''
+      note: log.note || '',
+      usage_source: log.usage_source || '-'
     }
-    const piecesStr = log.pieces != null ? `${log.pieces}pcs·` : ''
-    map[key].items.push(`${log.fabric_name}  ${piecesStr}${log.quantity}m`)
+    const piecesStr = log.pieces != null ? `${log.pieces}pcs · ` : ''
+    map[key].items.push(`${log.fabric_name} ${piecesStr}${log.quantity}m`)
   }
   return Object.values(map)
 })

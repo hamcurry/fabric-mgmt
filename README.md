@@ -19,9 +19,11 @@
 ## 功能特性
 
 - **面料管理** — 按一级/二级类目组织面料，支持颜色、库存、预警阈值管理
-- **款式管理** — 录入款式档案与各面料用量（米/件），支持图片粘贴
+- **款式管理** — 录入款式档案与各面料用量（米/件），支持图片粘贴、拍照或相册导入；款式图悬停放大预览
 - **用量计算** — 按件数自动计算所需面料用量，一键出库
-- **入库 / 出库** — 精确记录每次操作，支持关联款式与 PO 号
+- **入库 / 出库** — 精确记录每次操作，支持关联款式与 PO 号；出库支持颜色级面料手动指定，无库存可先记负库存等到货冲正
+- **OCR 智能识别** — 拍照或上传来料单/出货订单，AI 自动提取供应商、品类、颜色件数、PO 号等信息预填表单；来料单可一键导出 Excel；出货订单自动识别款式图并裁剪保存
+- **AI 配置** — 在备份页配置 AI 供应商（Anthropic Claude / OpenAI 兼容接口），支持自定义 base URL 与模型
 - **库存总览** — 实时库存状态，预警高亮，支持按类目筛选
 - **全局时间线** — 所有操作记录，支持多维度筛选与回滚
 - **报表导出** — 导出库存汇总或流水明细为 Excel 文件
@@ -37,6 +39,7 @@
 | 前端 | Vue 3 + Element Plus + Vite + vue-i18n |
 | 后端 | Node.js + Express |
 | 数据库 | SQLite（better-sqlite3） |
+| AI / OCR | Anthropic Claude / OpenAI 兼容接口（可选） |
 | 部署 | Docker Compose + Nginx |
 | 进程管理 | PM2（本地后台运行） |
 
@@ -124,6 +127,20 @@ cd client && npm install && npm run dev
 
 ---
 
+## OCR 智能识别（可选）
+
+OCR 功能需要配置 AI 供应商，在「备份/设置」页面底部完成配置：
+
+1. 选择供应商：**Anthropic Claude**（推荐）或 **OpenAI 兼容接口**
+2. 填入 API Key 和模型名称（Claude 推荐 `claude-sonnet-4-6`）
+3. 点击「测试连接」确认可用
+
+配置完成后，入库页和出库页顶部会出现「扫描来料单」/「扫描订单」按钮，支持手机拍照或上传图片/PDF。
+
+> `server/ai-config.json` 存储 API Key，已加入 `.gitignore`，不会提交到代码库。
+
+---
+
 ## 项目结构
 
 ```
@@ -174,9 +191,11 @@ A fabric inventory management system designed for garment factories — stock in
 ## Features
 
 - **Fabric Management** — Organize fabrics by category/sub-category with color, stock, and alert threshold
-- **Style Profiles** — Record styles with per-fabric usage (meters/piece), supports image paste
+- **Style Profiles** — Record styles with per-fabric usage (meters/piece); add style photo via paste, camera, or gallery; hover to zoom thumbnail
 - **Usage Calculator** — Auto-calculate fabric needed by piece count, one-click stock out
-- **Stock In / Out** — Full traceability with style association and PO number
+- **Stock In / Out** — Full traceability with style association and PO number; manual fabric assignment per color row; negative-stock pre-deduction supported
+- **OCR Smart Recognition** — Photograph or upload delivery notes / production orders; AI extracts supplier, fabric type, colors, piece counts, and PO numbers to pre-fill forms; delivery notes can be exported to Excel; style images are auto-cropped from order sheets
+- **AI Configuration** — Configure AI provider (Anthropic Claude or any OpenAI-compatible API) from the Backup/Settings page
 - **Inventory Overview** — Real-time stock status with alert highlighting and category filter
 - **Global Timeline** — All operations with multi-filter search and rollback support
 - **Excel Export** — Export stock summary or transaction history to Excel
@@ -192,6 +211,7 @@ A fabric inventory management system designed for garment factories — stock in
 | Frontend | Vue 3 + Element Plus + Vite + vue-i18n |
 | Backend | Node.js + Express |
 | Database | SQLite (better-sqlite3) |
+| AI / OCR | Anthropic Claude / OpenAI-compatible API (optional) |
 | Deployment | Docker Compose + Nginx |
 | Process Manager | PM2 (local background service) |
 
@@ -275,6 +295,20 @@ Open the **Backup** page from the sidebar:
 - **Restore** — Upload a previously downloaded `.db` file. The service restarts automatically (~5-10 s); refresh the page after.
 
 > On Docker deployments, restore triggers `process.exit(0)` and `restart: unless-stopped` brings it back automatically.
+
+---
+
+## OCR Smart Recognition (optional)
+
+Configure your AI provider on the **Backup / Settings** page:
+
+1. Choose provider: **Anthropic Claude** (recommended) or any **OpenAI-compatible API**
+2. Enter your API Key and model name (Claude: `claude-sonnet-4-6`)
+3. Click **Test Connection** to verify
+
+Once configured, a **Scan** button appears at the top of the Stock-In and Stock-Out pages. Supports camera capture or file upload (images and PDF).
+
+> `server/ai-config.json` stores the API Key locally and is listed in `.gitignore` — it will never be committed to the repository.
 
 ---
 
