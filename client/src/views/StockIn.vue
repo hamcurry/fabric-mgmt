@@ -40,14 +40,20 @@
 
     <el-form v-else :model="newForm" :rules="newRules" ref="newFormRef" label-width="90px">
       <el-form-item :label="$t('stock_in.cat1')" prop="cat1_id">
-        <el-select v-model="newForm.cat1_id" :placeholder="$t('stock_in.select_cat1')" style="width:100%" @change="newForm.cat2_id = null">
-          <el-option v-for="c in cat1List" :key="c.id" :label="c.name" :value="c.id" />
-        </el-select>
+        <div style="display:flex;gap:8px;width:100%">
+          <el-select v-model="newForm.cat1_id" :placeholder="$t('stock_in.select_cat1')" style="flex:1" @change="newForm.cat2_id = null">
+            <el-option v-for="c in cat1List" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+          <el-button @click="quickAddCat1(newForm.value)">+{{ $t('common.add') }}</el-button>
+        </div>
       </el-form-item>
       <el-form-item :label="$t('stock_in.cat2')" prop="cat2_id">
-        <el-select v-model="newForm.cat2_id" :placeholder="$t('stock_in.select_cat2')" style="width:100%" :disabled="!newForm.cat1_id">
-          <el-option v-for="c in cat2Options" :key="c.id" :label="c.name" :value="c.id" />
-        </el-select>
+        <div style="display:flex;gap:8px;width:100%">
+          <el-select v-model="newForm.cat2_id" :placeholder="$t('stock_in.select_cat2')" style="flex:1" :disabled="!newForm.cat1_id">
+            <el-option v-for="c in cat2Options" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+          <el-button :disabled="!newForm.cat1_id" @click="quickAddCat2(newForm.value)">+{{ $t('common.add') }}</el-button>
+        </div>
       </el-form-item>
       <el-form-item :label="$t('common.color')">
         <el-input v-model="newForm.color" :placeholder="$t('stock_in.color_placeholder')" />
