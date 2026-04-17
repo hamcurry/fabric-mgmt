@@ -55,7 +55,21 @@
 
     <el-card v-if="alerts.length" shadow="never">
       <template #header><b>{{ $t('dashboard.alert_list') }}</b></template>
-      <el-table :data="alerts" size="small">
+      <!-- Mobile alert cards -->
+      <div class="alert-mobile-list">
+        <div v-for="row in alerts" :key="row.id" class="alert-card">
+          <div>
+            <span style="font-weight:600">{{ row.cat1_name }}/{{ row.cat2_name }}</span>
+            <el-tag type="info" size="small" style="margin-left:6px">{{ row.color || $t('dashboard.no_color') }}</el-tag>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <el-tag type="danger" size="small">{{ row.current_stock }} {{ row.unit }}</el-tag>
+            <span style="font-size:11px;color:var(--color-text-tertiary)">阈值 {{ row.alert_threshold }}{{ row.unit }}</span>
+            <el-button size="small" type="primary" @click="$router.push('/stock/in')">{{ $t('dashboard.go_stock_in') }}</el-button>
+          </div>
+        </div>
+      </div>
+      <el-table :data="alerts" size="small" class="alert-desktop-table">
         <el-table-column :label="$t('dashboard.fabric_col')" min-width="160">
           <template #default="{ row }">
             <span style="font-weight:600">{{ row.cat1_name }}/{{ row.cat2_name }}</span>
@@ -122,6 +136,19 @@ onMounted(async () => {
 @media (max-width: 900px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
+@media (max-width: 640px) {
+  .stat-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 10px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .stat-grid::-webkit-scrollbar { display: none; }
+  .stat-card { min-width: 148px; scroll-snap-align: start; flex-shrink: 0; }
+}
 
 .stat-card {
   background: var(--color-bg-surface);
@@ -158,6 +185,12 @@ onMounted(async () => {
 }
 @media (max-width: 900px) {
   .quick-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .quick-btn { padding: 10px 12px; gap: 8px; }
+  .quick-btn-icon { width: 30px; height: 30px; font-size: 15px; }
+  .quick-btn-title { font-size: 12.5px; }
+  .quick-btn-sub { font-size: 10.5px; }
 }
 
 .quick-btn {
@@ -208,4 +241,22 @@ onMounted(async () => {
 .quick-btn--neutral { background: var(--prim-stone-100); color: var(--prim-stone-600); }
 .quick-btn--neutral:hover { background: var(--prim-stone-200); }
 .quick-btn--neutral .quick-btn-icon { background: var(--prim-stone-400); }
+
+@media (max-width: 640px) {
+  .alert-desktop-table { display: none; }
+  .alert-mobile-list { display: block; }
+}
+@media (min-width: 641px) {
+  .alert-mobile-list { display: none; }
+}
+
+.alert-card {
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-danger-text);
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-base);
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.alert-card:last-child { margin-bottom: 0; }
 </style>

@@ -17,7 +17,26 @@
         </div>
       </template>
 
-      <el-table :data="filtered" v-loading="loading" border style="width:100%">
+      <!-- Mobile card list (≤640px) -->
+      <div class="mobile-fabric-list" v-loading="loading">
+        <div v-for="row in filtered" :key="row.id" class="fabric-card">
+          <div class="fabric-card-left">
+            <div class="fabric-card-name">{{ row.cat1_name }} / {{ row.cat2_name }}</div>
+            <div class="fabric-card-color">{{ row.color || '-' }}</div>
+          </div>
+          <div class="fabric-card-right">
+            <el-tag :type="row.is_alert ? 'danger' : 'success'" style="font-variant-numeric:tabular-nums">
+              {{ row.current_stock }} {{ row.unit }}
+            </el-tag>
+            <el-button size="small" @click="openHistory(row)">{{ $t('inventory.history') }}</el-button>
+          </div>
+        </div>
+        <div v-if="!filtered.length && !loading" style="padding:32px;text-align:center;color:var(--color-text-tertiary)">
+          {{ $t('inventory.total', { n: 0 }) }}
+        </div>
+      </div>
+
+      <el-table :data="filtered" v-loading="loading" border style="width:100%" class="desktop-table">
         <el-table-column prop="cat1_name" :label="$t('inventory.cat1')" min-width="70" />
         <el-table-column prop="cat2_name" :label="$t('inventory.cat2')" min-width="70" />
         <el-table-column prop="color" :label="$t('common.color')" min-width="70">
@@ -174,5 +193,30 @@ onMounted(async () => {
 <style scoped>
 @media (max-width: 640px) {
   :deep(.hide-xs) { display: none; }
+  .desktop-table { display: none; }
+  .mobile-fabric-list { display: block; }
 }
+@media (min-width: 641px) {
+  .mobile-fabric-list { display: none; }
+}
+
+.mobile-fabric-list {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  background: var(--color-bg-surface);
+}
+.fabric-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.fabric-card:last-child { border-bottom: none; }
+.fabric-card-left { flex: 1; min-width: 0; }
+.fabric-card-name { font-weight: 600; font-size: 14px; color: var(--color-text-primary); }
+.fabric-card-color { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.fabric-card-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 </style>

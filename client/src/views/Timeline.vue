@@ -48,8 +48,11 @@
             :style="{
               display:'flex',alignItems:'center',flexWrap:'wrap',gap:'6px',
               padding:'10px 12px',
+              paddingLeft:'0',
               borderBottom: i < group.items.length - 1 ? '1px solid var(--color-border-subtle)' : 'none',
-              fontSize:'13px'
+              fontSize:'13px',
+              borderLeft: `3px solid ${log.type==='in' ? 'var(--color-success-text)' : 'var(--color-warning-text)'}`,
+              paddingLeft: '12px'
             }"
           >
             <el-tag

@@ -17,6 +17,7 @@ export default {
     timeline: '全局时间线', timeline_desc: '所有操作记录与历史流水',
     reports: '报表导出', reports_desc: '导出库存报表为 Excel 文件',
     warehouse: '仓库操作',
+    stock: '出入库', more: '更多',
     backup: '备份还原', backup_desc: '备份与恢复数据库'
   },
   common: {

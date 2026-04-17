@@ -134,6 +134,40 @@
         </main>
       </div>
     </div>
+
+    <!-- ── Mobile Bottom Navigation ── -->
+    <nav class="bottom-nav">
+      <router-link to="/dashboard" class="bottom-nav-item" :class="{ active: $route.path === '/dashboard' || $route.path === '/' }" @click="closeSidebar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10.707 2.293a1 1 0 0 0-1.414 0l-7 7a1 1 0 0 0 1.414 1.414L4 10.414V17a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-6.586l.293.293a1 1 0 0 0 1.414-1.414l-7-7z"/>
+        </svg>
+        <span>{{ $t('nav.dashboard') }}</span>
+      </router-link>
+      <router-link to="/inventory" class="bottom-nav-item" :class="{ active: $route.path === '/inventory' }" @click="closeSidebar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+        </svg>
+        <span>{{ $t('nav.inventory') }}</span>
+      </router-link>
+      <router-link to="/stock/in" class="bottom-nav-item" :class="{ active: $route.path.startsWith('/stock') }" @click="closeSidebar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M5 12a1 1 0 102 0V7.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 7.414V12zM15 8a1 1 0 10-2 0v4.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 12.586V8z"/>
+        </svg>
+        <span>{{ $t('nav.stock') }}</span>
+      </router-link>
+      <router-link to="/timeline" class="bottom-nav-item" :class="{ active: $route.path === '/timeline' }" @click="closeSidebar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+        </svg>
+        <span>{{ $t('nav.timeline') }}</span>
+      </router-link>
+      <button class="bottom-nav-item" :class="{ active: sidebarOpen }" @click="sidebarOpen = true">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span>{{ $t('nav.more') }}</span>
+      </button>
+    </nav>
   </el-config-provider>
 </template>
 
@@ -395,6 +429,37 @@ onMounted(() => {
   background: var(--color-bg-app);
 }
 
+/* ── Bottom Navigation ── */
+.bottom-nav {
+  display: none;
+}
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px 2px;
+  min-width: 0;
+  transition: color var(--dur-fast) var(--ease-standard);
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav-item.active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.bottom-nav-item svg {
+  flex-shrink: 0;
+}
+
 /* ══ Mobile Responsive ══ */
 @media (max-width: 768px) {
   .sidebar-overlay { display: block; }
@@ -413,10 +478,22 @@ onMounted(() => {
     transform: translateX(0);
   }
 
-  .topbar-menu-btn { display: flex; }
+  .topbar-menu-btn { display: none; }
   .topbar { padding: 0 16px; gap: 10px; }
   .topbar-breadcrumb { display: none; }
 
-  .content { padding: 16px; }
+  .content { padding: 16px; padding-bottom: calc(56px + 16px + env(safe-area-inset-bottom)); }
+
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 90;
+    height: 56px;
+    background: var(--color-bg-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 </style>

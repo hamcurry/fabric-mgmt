@@ -17,6 +17,7 @@ export default {
     timeline: 'Timeline', timeline_desc: 'All operation records and history',
     reports: 'Reports', reports_desc: 'Export inventory reports to Excel',
     warehouse: 'Warehouse',
+    stock: 'Warehouse', more: 'More',
     backup: 'Backup', backup_desc: 'Backup and restore the database'
   },
   common: {
