@@ -42,13 +42,13 @@
         >
           <el-select
             v-model="row.colorName" :placeholder="$t('common.color')" filterable allow-create
-            style="width:160px" @change="syncMappings"
+            style="flex:1;min-width:90px" @change="syncMappings"
           >
             <el-option v-for="c in allColors" :key="c" :label="c" :value="c" />
           </el-select>
           <el-input-number
             v-model="row.pieces" :min="0" :precision="0" :step="10"
-            style="width:130px" @change="syncMappings"
+            style="width:110px" @change="syncMappings"
           />
           <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('common.pieces') }}</span>
           <el-button
@@ -88,7 +88,7 @@
           <span style="font-size:13px;min-width:85px">
             = <b style="color:var(--color-primary)">{{ sel.quantity.toFixed(3) }}</b> {{ $t('common.meter') }}
           </span>
-          <span style="font-size:13px;min-width:200px;color:var(--color-text-secondary)">
+          <span style="font-size:13px;flex:1;min-width:60px;color:var(--color-text-secondary);word-break:break-all">
             {{ sel.fabric_name || '未匹配' }}
           </span>
           <el-tag
@@ -138,7 +138,7 @@
     <el-dialog
       v-model="ocrDialogVisible"
       :title="$t('ocr.dialog_title_out')"
-      width="1100px"
+      :width="ocrDialogWidth"
       :close-on-click-modal="false"
     >
       <div v-if="ocrResult">
@@ -252,6 +252,10 @@ const catTree = ref([])
 const saving = ref(false)
 const loadingMaterials = ref(false)
 const ocrApplying = ref(false)
+
+const ocrDialogWidth = computed(() =>
+  typeof window !== 'undefined' && window.innerWidth < 700 ? '98vw' : '1100px'
+)
 const formRef = ref()
 
 const form = ref({ style_id: null, po_number: '', note: '' })

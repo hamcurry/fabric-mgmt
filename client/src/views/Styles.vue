@@ -72,7 +72,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? $t('styles.edit_style') : $t('styles.new_style')" width="760px">
+    <el-dialog v-model="dialogVisible" :title="form.id ? $t('styles.edit_style') : $t('styles.new_style')" width="min(760px, 98vw)">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="90px">
         <el-form-item :label="$t('styles.style_name')" prop="name">
           <el-input v-model="form.name" />
@@ -122,7 +122,7 @@
           <div style="width:100%">
             <div
               v-for="(m, i) in form.materials" :key="i"
-              style="display:grid;grid-template-columns:110px 1fr 150px 150px auto;gap:8px;margin-bottom:8px;align-items:center"
+              class="material-row"
             >
               <el-select
                 v-model="m.cat1_id"
@@ -156,7 +156,7 @@
               <el-button icon="Delete" circle size="small" type="danger" plain @click="form.materials.splice(i,1)" />
             </div>
 
-            <div style="display:grid;grid-template-columns:110px 1fr 150px 150px auto;gap:8px;color:var(--color-text-tertiary);font-size:12px;margin:-2px 0 8px">
+            <div class="material-row-labels" style="color:var(--color-text-tertiary);font-size:12px;margin:-2px 0 8px">
               <span></span>
               <span></span>
               <span>实际用量 m/件</span>
@@ -327,4 +327,30 @@ onMounted(async () => {
 
 <style scoped>
 :deep(.img-hover-popper) { padding: 4px; }
+
+.material-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 150px 150px auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.material-row-labels {
+  display: grid;
+  grid-template-columns: 110px 1fr 150px 150px auto;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .material-row {
+    grid-template-columns: 1fr 1fr auto;
+    grid-template-rows: auto auto;
+  }
+  .material-row > :nth-child(1) { grid-column: 1; grid-row: 1; }
+  .material-row > :nth-child(2) { grid-column: 2; grid-row: 1; }
+  .material-row > :nth-child(5) { grid-column: 3; grid-row: 1; }
+  .material-row > :nth-child(3) { grid-column: 1; grid-row: 2; }
+  .material-row > :nth-child(4) { grid-column: 2 / span 2; grid-row: 2; }
+  .material-row-labels { display: none; }
+}
 </style>

@@ -27,13 +27,13 @@
         >
           <el-select
             v-model="row.colorName" :placeholder="$t('common.color')" filterable allow-create
-            style="width:160px" @change="syncMappings"
+            style="flex:1;min-width:90px" @change="syncMappings"
           >
             <el-option v-for="c in allColors" :key="c" :label="c" :value="c" />
           </el-select>
           <el-input-number
             v-model="row.pieces" :min="0" :precision="0" :step="10"
-            style="width:130px" @change="syncMappings"
+            style="width:110px" @change="syncMappings"
           />
           <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('common.pieces') }}</span>
           <el-button
@@ -49,7 +49,7 @@
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
         <div
           v-for="mat in materials" :key="mat.cat2_id"
-          style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px 14px;min-width:220px"
+          style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px 14px;min-width:min(220px,45%);flex:1"
         >
           <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">{{ mat.cat1_name }}/{{ mat.cat2_name }}</div>
           <div style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:6px">
@@ -108,7 +108,7 @@
       {{ $t('calc.not_configured') }}
     </div>
 
-    <el-dialog v-model="showDialog" :title="$t('calc.confirm_out_title')" width="400px">
+    <el-dialog v-model="showDialog" :title="$t('calc.confirm_out_title')" width="min(400px, 95vw)">
       <el-form ref="deductFormRef" :model="deductForm" :rules="deductRules" label-width="70px">
         <el-form-item :label="$t('common.po_number')" prop="po_number">
           <el-input v-model="deductForm.po_number" :placeholder="$t('calc.po_placeholder')" />

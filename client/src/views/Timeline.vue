@@ -6,14 +6,14 @@
           <el-option :label="$t('common.stock_in')" value="in" />
           <el-option :label="$t('common.stock_out')" value="out" />
         </el-select>
-        <el-select v-model="filters.fabric_id" :placeholder="$t('common.fabric')" clearable filterable style="width:180px">
+        <el-select v-model="filters.fabric_id" :placeholder="$t('common.fabric')" clearable filterable style="width:150px">
           <el-option
             v-for="f in fabrics" :key="f.id"
             :label="`${f.cat1_name}/${f.cat2_name}${f.color ? '·'+f.color : ''}`"
             :value="f.id"
           />
         </el-select>
-        <el-select v-model="filters.style_id" :placeholder="$t('common.style')" clearable filterable style="width:150px">
+        <el-select v-model="filters.style_id" :placeholder="$t('common.style')" clearable filterable style="width:120px">
           <el-option v-for="s in styles" :key="s.id" :label="s.name" :value="s.id" />
         </el-select>
         <el-date-picker
@@ -23,7 +23,7 @@
           :start-placeholder="$t('timeline.start')"
           :end-placeholder="$t('timeline.end')"
           value-format="YYYY-MM-DD"
-          style="width:220px"
+          style="width:min(220px,100%)"
         />
         <el-button type="primary" @click="load" icon="Search">{{ $t('timeline.filter') }}</el-button>
         <el-button @click="resetFilters">{{ $t('common.reset') }}</el-button>
@@ -46,8 +46,8 @@
             v-for="(log, i) in group.items"
             :key="log.id"
             :style="{
-              display:'flex',alignItems:'center',gap:'10px',
-              padding:'10px 16px',
+              display:'flex',alignItems:'center',flexWrap:'wrap',gap:'6px',
+              padding:'10px 12px',
               borderBottom: i < group.items.length - 1 ? '1px solid var(--color-border-subtle)' : 'none',
               fontSize:'13px'
             }"
@@ -64,7 +64,7 @@
               {{ log.operated_at.slice(11,16) }}
             </span>
 
-            <span style="font-weight:600;color:var(--color-text-primary);min-width:100px">{{ log.fabric_name }}</span>
+            <span style="font-weight:600;color:var(--color-text-primary)">{{ log.fabric_name }}</span>
 
             <span :style="{fontWeight:'700',color: log.type==='in' ? 'var(--color-success-text)' : 'var(--color-warning-text)',minWidth:'60px'}">
               {{ log.type === 'in' ? '+' : '-' }}{{ log.quantity }}{{ $t('common.meter') }}
@@ -102,7 +102,7 @@
       </div>
     </div>
 
-    <el-dialog v-model="imageDialogVisible" :title="$t('timeline.image_preview_title')" width="760px">
+    <el-dialog v-model="imageDialogVisible" :title="$t('timeline.image_preview_title')" width="min(760px, 98vw)">
       <div v-if="imageDialogImages.length" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
         <el-image
           v-for="(img, i) in imageDialogImages"

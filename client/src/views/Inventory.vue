@@ -6,7 +6,7 @@
           <b>{{ $t('inventory.title') }}</b>
           <el-space wrap>
             <el-input
-              v-model="search" :placeholder="$t('inventory.search_placeholder')" clearable style="width:200px"
+              v-model="search" :placeholder="$t('inventory.search_placeholder')" clearable style="width:160px"
               prefix-icon="Search"
             />
             <el-select v-model="filterCat1" :placeholder="$t('inventory.cat1_filter')" clearable style="width:110px">
@@ -55,7 +55,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="historyVisible" :title="$t('inventory.history_title', { name: historyFabric?.name || '' })" width="680px">
+    <el-dialog v-model="historyVisible" :title="$t('inventory.history_title', { name: historyFabric?.name || '' })" width="min(680px, 98vw)">
       <div v-loading="historyLoading">
         <el-table :data="historyLogs" size="small" border max-height="420">
           <el-table-column prop="operated_at" :label="$t('common.created_at')" width="155" />

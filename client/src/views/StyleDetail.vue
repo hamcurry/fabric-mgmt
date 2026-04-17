@@ -13,7 +13,7 @@
       </template>
 
       <el-row :gutter="16">
-        <el-col :span="style.image_base64 ? 8 : 0" v-if="style.image_base64">
+        <el-col :xs="24" :sm="style.image_base64 ? 8 : 0" v-if="style.image_base64">
           <el-image
             :src="style.image_base64"
             style="width:100%;max-height:300px;object-fit:contain;border-radius:6px;border:1px solid var(--color-border)"
@@ -21,7 +21,7 @@
             preview-teleported
           />
         </el-col>
-        <el-col :span="style.image_base64 ? 16 : 24">
+        <el-col :xs="24" :sm="style.image_base64 ? 16 : 24">
           <el-descriptions :column="2" border>
             <el-descriptions-item :label="$t('common.customer')">{{ style.customer || '-' }}</el-descriptions-item>
             <el-descriptions-item :label="$t('common.created_at')">{{ style.created_at }}</el-descriptions-item>
@@ -51,7 +51,7 @@
         {{ $t('style_detail.no_records') }}
       </div>
 
-      <el-table v-else :data="grouped" border>
+      <el-table v-else :data="grouped" border style="width:100%" :scroll-x="true">
         <el-table-column prop="date" :label="$t('style_detail.date')" width="110" />
         <el-table-column prop="po" :label="$t('common.po_number')" width="150" />
         <el-table-column :label="$t('style_detail.out_details')" min-width="260">
