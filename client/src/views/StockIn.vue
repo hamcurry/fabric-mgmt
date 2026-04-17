@@ -44,7 +44,7 @@
           <el-select v-model="newForm.cat1_id" :placeholder="$t('stock_in.select_cat1')" style="flex:1" @change="newForm.cat2_id = null">
             <el-option v-for="c in cat1List" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
-          <el-button @click="quickAddCat1(newForm.value)">+{{ $t('common.add') }}</el-button>
+          <el-button @click="addCat1ForNewForm">+{{ $t('common.add') }}</el-button>
         </div>
       </el-form-item>
       <el-form-item :label="$t('stock_in.cat2')" prop="cat2_id">
@@ -52,7 +52,7 @@
           <el-select v-model="newForm.cat2_id" :placeholder="$t('stock_in.select_cat2')" style="flex:1" :disabled="!newForm.cat1_id">
             <el-option v-for="c in cat2Options" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
-          <el-button :disabled="!newForm.cat1_id" @click="quickAddCat2(newForm.value)">+{{ $t('common.add') }}</el-button>
+          <el-button :disabled="!newForm.cat1_id" @click="addCat2ForNewForm">+{{ $t('common.add') }}</el-button>
         </div>
       </el-form-item>
       <el-form-item :label="$t('common.color')">
@@ -118,7 +118,7 @@
                 >
                   <el-option v-for="c in cat1List" :key="c.id" :label="c.name" :value="c.id" />
                 </el-select>
-                <el-button size="small" link @click="quickAddCat1(row)">+{{ $t('common.add') }}</el-button>
+                <el-button size="small" link @click="openAddCatDialog('cat1', row)">+{{ $t('common.add') }}</el-button>
               </div>
             </template>
           </el-table-column>
@@ -133,7 +133,7 @@
                     :value="c.id"
                   />
                 </el-select>
-                <el-button size="small" link @click="quickAddCat2(row)">+{{ $t('common.add') }}</el-button>
+                <el-button size="small" link @click="openAddCatDialog('cat2', row)">+{{ $t('common.add') }}</el-button>
               </div>
             </template>
           </el-table-column>
@@ -182,11 +182,29 @@
         <el-button type="primary" :loading="savingOcrRecords" @click="applyOcrToForm">{{ $t('stock_in.batch_confirm_btn') }}</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="addCatDialog.visible"
+      :title="addCatDialog.type === 'cat1' ? '新增大类' : '新增小类'"
+      width="min(360px, 95vw)"
+      @closed="addCatDialog.name = ''"
+    >
+      <el-input
+        v-model="addCatDialog.name"
+        placeholder="输入类目名称"
+        autofocus
+        @keyup.enter="confirmAddCat"
+      />
+      <template #footer>
+        <el-button @click="addCatDialog.visible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="addCatDialog.saving" @click="confirmAddCat">{{ $t('common.save') }}</el-button>
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { fabricsApi, categoriesApi, stockApi, ocrApi } from '../api'
@@ -265,36 +283,44 @@ const onOcrCat1Change = (row) => {
   if (!options.find(c => c.id === row.cat2_id)) row.cat2_id = null
 }
 
-const quickAddCat1 = async (row) => {
-  const name = window.prompt('新增一级类目')
-  if (!name?.trim()) return
-  try {
-    const created = await categoriesApi.createCat1({ name: name.trim() })
-    catTree.value = await categoriesApi.tree()
-    row.cat1_id = created.id
-    row.cat2_id = null
-    ElMessage.success(t('common.create_success'))
-  } catch (e) {
-    ElMessage.error(e.message)
-  }
-}
+const addCatDialog = reactive({ visible: false, type: '', name: '', saving: false, row: null })
 
-const quickAddCat2 = async (row) => {
-  if (!row.cat1_id) {
+const openAddCatDialog = (type, row) => {
+  if (type === 'cat2' && !row.cat1_id) {
     ElMessage.error(t('stock_in.val_cat1'))
     return
   }
-  const name = window.prompt('新增二级类目')
-  if (!name?.trim()) return
+  addCatDialog.type = type
+  addCatDialog.name = ''
+  addCatDialog.row = row
+  addCatDialog.visible = true
+}
+
+const confirmAddCat = async () => {
+  if (!addCatDialog.name.trim()) return
+  addCatDialog.saving = true
   try {
-    const created = await categoriesApi.createCat2({ cat1_id: row.cat1_id, name: name.trim() })
-    catTree.value = await categoriesApi.tree()
-    row.cat2_id = created.id
+    if (addCatDialog.type === 'cat1') {
+      const created = await categoriesApi.createCat1({ name: addCatDialog.name.trim() })
+      catTree.value = await categoriesApi.tree()
+      addCatDialog.row.cat1_id = created.id
+      addCatDialog.row.cat2_id = null
+    } else {
+      const created = await categoriesApi.createCat2({ cat1_id: addCatDialog.row.cat1_id, name: addCatDialog.name.trim() })
+      catTree.value = await categoriesApi.tree()
+      addCatDialog.row.cat2_id = created.id
+    }
     ElMessage.success(t('common.create_success'))
+    addCatDialog.visible = false
   } catch (e) {
     ElMessage.error(e.message)
+  } finally {
+    addCatDialog.saving = false
   }
 }
+
+const addCat1ForNewForm = () => openAddCatDialog('cat1', newForm.value)
+const addCat2ForNewForm = () => openAddCatDialog('cat2', newForm.value)
 
 const triggerScan = () => ocrFileInput.value.click()
 

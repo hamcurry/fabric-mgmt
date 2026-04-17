@@ -83,7 +83,12 @@
           :key="i"
           style="display:flex;gap:8px;align-items:center;margin-bottom:6px;margin-left:16px;flex-wrap:wrap"
         >
-          <span style="width:60px;font-size:13px;color:var(--color-text-primary)">{{ colorRows[i]?.colorName || '-' }}</span>
+          <el-input
+            v-model="sel.overrideColor"
+            size="small"
+            style="width:120px"
+            @change="onSelColorChange(mat, sel)"
+          />
           <span style="font-size:13px;color:var(--color-text-secondary);width:55px">{{ sel.pieces }} {{ $t('common.pieces') }}</span>
           <span style="font-size:13px;min-width:85px">
             = <b style="color:var(--color-primary)">{{ sel.quantity.toFixed(3) }}</b> {{ $t('common.meter') }}
@@ -176,6 +181,13 @@ const pickFabric = (mat, colorName) => {
   return [...exact].sort((a, b) => b.current_stock - a.current_stock)[0]
 }
 
+const onSelColorChange = (mat, sel) => {
+  const fabric = pickFabric(mat, sel.overrideColor)
+  sel.fabric_id = fabric?.id || null
+  sel.fabric_name = fabric ? `${fabric.cat1_name}/${fabric.cat2_name}${fabric.color ? '·' + fabric.color : ''}` : ''
+  sel.stock = fabric?.current_stock || 0
+}
+
 const syncMappings = () => {
   for (const mat of materials.value) {
     fabricSelections[mat.cat2_id] = colorRows.map(row => {
@@ -186,6 +198,7 @@ const syncMappings = () => {
         fabric_name: fabric ? `${fabric.cat1_name}/${fabric.cat2_name}${fabric.color ? '·' + fabric.color : ''}` : '',
         stock: fabric?.current_stock || 0,
         color: row.colorName || '',
+        overrideColor: row.colorName || '',
         pieces,
         quantity: parseFloat((pieces * mat.usage_per_piece).toFixed(3)),
         usage_source: mat.usage_source,

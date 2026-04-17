@@ -17,7 +17,8 @@
         </div>
       </template>
 
-      <el-table :data="filtered" v-loading="loading" border>
+      <div style="overflow-x:auto">
+      <el-table :data="filtered" v-loading="loading" border style="min-width:490px">
         <el-table-column prop="cat1_name" :label="$t('inventory.cat1')" width="80" />
         <el-table-column prop="cat2_name" :label="$t('inventory.cat2')" width="80" />
         <el-table-column prop="color" :label="$t('common.color')" width="80">
@@ -30,10 +31,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="alert_threshold" :label="$t('inventory.alert_threshold')" width="90">
+        <el-table-column prop="alert_threshold" :label="$t('inventory.alert_threshold')" width="90" class-name="hide-xs">
           <template #default="{ row }">{{ row.alert_threshold }} {{ row.unit }}</template>
         </el-table-column>
-        <el-table-column :label="$t('common.status')" width="75">
+        <el-table-column :label="$t('common.status')" width="75" class-name="hide-xs">
           <template #default="{ row }">
             <el-tag :type="row.is_alert ? 'danger' : 'success'" size="small">
               {{ row.is_alert ? $t('common.alert') : $t('common.normal') }}
@@ -49,6 +50,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <div style="margin-top:12px;color:#9CA3AF;font-size:13px">
         {{ $t('inventory.total', { n: filtered.length }) }} · {{ $t('inventory.alert_count', { n: alertCount }) }}
@@ -170,3 +172,9 @@ onMounted(async () => {
   fabrics.value = await reportsApi.stock().finally(() => loading.value = false)
 })
 </script>
+
+<style scoped>
+@media (max-width: 640px) {
+  :deep(.hide-xs) { display: none; }
+}
+</style>

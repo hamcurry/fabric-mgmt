@@ -165,7 +165,8 @@
         <div style="margin-bottom:10px;color:var(--color-text-secondary);font-size:13px">
           识别到 {{ totalOcrPieces }} 件，请补充面料分类：
         </div>
-        <el-table :data="ocrResult.usage_items" size="small" border>
+        <div style="overflow-x:auto">
+        <el-table :data="ocrResult.usage_items" size="small" border style="min-width:600px">
           <el-table-column label="面料类型" prop="fabric_type" min-width="120">
             <template #default="{ row }">
               <el-input v-model="row.fabric_type" size="small" />
@@ -177,7 +178,7 @@
                 <el-select v-model="row.cat1_id" filterable size="small" style="flex:1" placeholder="大类" @change="onOcrCat1Change(row)">
                   <el-option v-for="c in catTree" :key="c.id" :label="c.name" :value="c.id" />
                 </el-select>
-                <el-button size="small" link @click="quickAddCat1(row)">+新建</el-button>
+                <el-button size="small" link @click="openAddCatDialog('cat1', row)">+新建</el-button>
               </div>
             </template>
           </el-table-column>
@@ -187,7 +188,7 @@
                 <el-select v-model="row.cat2_id" filterable size="small" style="flex:1" placeholder="细类">
                   <el-option v-for="c in getCat2OptionsByCat1(row.cat1_id)" :key="c.id" :label="c.name" :value="c.id" />
                 </el-select>
-                <el-button size="small" link @click="quickAddCat2(row)">+新建</el-button>
+                <el-button size="small" link @click="openAddCatDialog('cat2', row)">+新建</el-button>
               </div>
             </template>
           </el-table-column>
@@ -212,6 +213,7 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
         <el-button size="small" link icon="Plus" style="margin-top:8px" @click="addOcrUsageItem">添加用量行</el-button>
 
         <el-divider>{{ $t('ocr.color_pieces') }}</el-divider>
@@ -232,6 +234,24 @@
       <template #footer>
         <el-button @click="ocrDialogVisible = false">{{ $t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="ocrApplying" @click="applyOcrToForm">应用到表单</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="addCatDialog.visible"
+      :title="addCatDialog.type === 'cat1' ? '新增大类' : '新增小类'"
+      width="min(360px, 95vw)"
+      @closed="addCatDialog.name = ''"
+    >
+      <el-input
+        v-model="addCatDialog.name"
+        placeholder="输入类目名称"
+        autofocus
+        @keyup.enter="confirmAddCat"
+      />
+      <template #footer>
+        <el-button @click="addCatDialog.visible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="addCatDialog.saving" @click="confirmAddCat">{{ $t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </el-card>
@@ -365,34 +385,39 @@ const onOcrCat1Change = (row) => {
   if (!options.find(c => c.id === row.cat2_id)) row.cat2_id = null
 }
 
-const quickAddCat1 = async (row) => {
-  const name = window.prompt('Add category level 1')
-  if (!name?.trim()) return
-  try {
-    const created = await categoriesApi.createCat1({ name: name.trim() })
-    catTree.value = await categoriesApi.tree()
-    row.cat1_id = created.id
-    row.cat2_id = null
-    ElMessage.success(t('common.create_success'))
-  } catch (e) {
-    ElMessage.error(e.message)
-  }
-}
+const addCatDialog = reactive({ visible: false, type: '', name: '', saving: false, row: null })
 
-const quickAddCat2 = async (row) => {
-  if (!row.cat1_id) {
-    ElMessage.error('Please select category level 1 first')
+const openAddCatDialog = (type, row) => {
+  if (type === 'cat2' && !row.cat1_id) {
+    ElMessage.error(t('stock_in.val_cat1'))
     return
   }
-  const name = window.prompt('Add category level 2')
-  if (!name?.trim()) return
+  addCatDialog.type = type
+  addCatDialog.name = ''
+  addCatDialog.row = row
+  addCatDialog.visible = true
+}
+
+const confirmAddCat = async () => {
+  if (!addCatDialog.name.trim()) return
+  addCatDialog.saving = true
   try {
-    const created = await categoriesApi.createCat2({ cat1_id: row.cat1_id, name: name.trim() })
-    catTree.value = await categoriesApi.tree()
-    row.cat2_id = created.id
+    if (addCatDialog.type === 'cat1') {
+      const created = await categoriesApi.createCat1({ name: addCatDialog.name.trim() })
+      catTree.value = await categoriesApi.tree()
+      addCatDialog.row.cat1_id = created.id
+      addCatDialog.row.cat2_id = null
+    } else {
+      const created = await categoriesApi.createCat2({ cat1_id: addCatDialog.row.cat1_id, name: addCatDialog.name.trim() })
+      catTree.value = await categoriesApi.tree()
+      addCatDialog.row.cat2_id = created.id
+    }
     ElMessage.success(t('common.create_success'))
+    addCatDialog.visible = false
   } catch (e) {
     ElMessage.error(e.message)
+  } finally {
+    addCatDialog.saving = false
   }
 }
 
