@@ -248,7 +248,22 @@ const handleImageFile = (e) => {
   const file = e.target.files?.[0]
   if (!file) return
   const reader = new FileReader()
-  reader.onload = (ev) => { form.value.image_base64 = ev.target.result }
+  reader.onload = (ev) => {
+    const img = new Image()
+    img.onload = () => {
+      const MAX = 1200
+      let w = img.naturalWidth, h = img.naturalHeight
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+        else { w = Math.round(w * MAX / h); h = MAX }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      form.value.image_base64 = canvas.toDataURL('image/jpeg', 0.85)
+    }
+    img.src = ev.target.result
+  }
   reader.readAsDataURL(file)
   e.target.value = ''
 }
