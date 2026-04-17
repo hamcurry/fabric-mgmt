@@ -95,7 +95,7 @@ function saveGlmOcrConfig (cfg) {
 
 function isGlmOcrConfigured () {
   const c = getGlmOcrConfig()
-  return !!(c.api_key && c.model)
+  return !!(c.model && c.base_url)
 }
 
 module.exports = { getConfig, saveConfig, isConfigured, getGlmOcrConfig, saveGlmOcrConfig, isGlmOcrConfigured, PRESETS }

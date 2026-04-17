@@ -107,7 +107,7 @@ async function callAI(file, prompt, cfgOverride) {
 
   const OpenAI = require('openai')
   const client = new OpenAI({
-    apiKey: cfg.api_key,
+    apiKey: cfg.api_key || 'none',
     baseURL: cfg.base_url || undefined
   })
 

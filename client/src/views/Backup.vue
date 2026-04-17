@@ -81,11 +81,12 @@
       </template>
       <p style="color:var(--color-text-secondary);font-size:13px;margin-bottom:16px">{{ $t('glm_ocr.desc') }}</p>
       <el-form :model="glmForm" label-width="90px" style="max-width:520px">
-        <el-form-item :label="$t('ai_settings.api_key')">
-          <el-input v-model="glmForm.api_key" type="password" show-password :placeholder="$t('ai_settings.api_key_ph')" />
+        <el-form-item label="接口地址">
+          <el-input v-model="glmForm.base_url" placeholder="http://localhost:11434/v1" />
+          <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:4px">本地模型填 Ollama/LMStudio 地址；云端填供应商地址</div>
         </el-form-item>
-        <el-form-item :label="$t('ai_settings.base_url')">
-          <el-input v-model="glmForm.base_url" placeholder="https://open.bigmodel.cn/api/paas/v4/" />
+        <el-form-item label="API Key">
+          <el-input v-model="glmForm.api_key" type="password" show-password placeholder="本地模型无需填写（可留空）" />
         </el-form-item>
         <el-form-item :label="$t('ai_settings.model')">
           <el-input v-model="glmForm.model" placeholder="glm-4v-ocr" />
@@ -203,13 +204,13 @@ const testAiConfig = async () => {
 const glmForm = ref({ api_key: '', base_url: 'https://open.bigmodel.cn/api/paas/v4/', model: 'glm-4v-ocr' })
 const glmSaving = ref(false)
 const glmTesting = ref(false)
-const glmConfigured = computed(() => !!(glmForm.value.api_key && glmForm.value.api_key !== '***' ? glmForm.value.api_key : localStorage.getItem('glm_ocr_configured') === 'true'))
+const glmConfigured = computed(() => !!(glmForm.value.model && glmForm.value.base_url))
 
 const saveGlmConfig = async () => {
   glmSaving.value = true
   try {
     await aiSettingsApi.saveGlmOcr(glmForm.value)
-    if (glmForm.value.api_key) localStorage.setItem('glm_ocr_configured', 'true')
+    if (glmForm.value.model && glmForm.value.base_url) localStorage.setItem('glm_ocr_configured', 'true')
     ElMessage.success(t('glm_ocr.save_ok'))
   } catch (e) { ElMessage.error(e.message) }
   finally { glmSaving.value = false }

@@ -100,12 +100,12 @@ router.post('/glm-ocr', express.json(), (req, res) => {
 
 router.post('/glm-ocr/test', express.json(), async (req, res) => {
   const c = getGlmOcrConfig()
-  if (!c.api_key || !c.model) {
-    return res.status(400).json({ error: '请先保存 GLM-OCR API Key 和模型名称' })
+  if (!c.model || !c.base_url) {
+    return res.status(400).json({ error: '请先保存模型名称和接口地址' })
   }
   try {
     const OpenAI = require('openai')
-    const client = new OpenAI({ apiKey: c.api_key, baseURL: c.base_url || undefined })
+    const client = new OpenAI({ apiKey: c.api_key || 'none', baseURL: c.base_url || undefined })
     const resp = await client.chat.completions.create({
       model: c.model, max_tokens: 20,
       messages: [{ role: 'user', content: '请回复"OK"' }]
