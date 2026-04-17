@@ -17,14 +17,13 @@
         </div>
       </template>
 
-      <div style="overflow-x:auto">
-      <el-table :data="filtered" v-loading="loading" border style="min-width:490px">
-        <el-table-column prop="cat1_name" :label="$t('inventory.cat1')" width="80" />
-        <el-table-column prop="cat2_name" :label="$t('inventory.cat2')" width="80" />
-        <el-table-column prop="color" :label="$t('common.color')" width="80">
+      <el-table :data="filtered" v-loading="loading" border style="width:100%">
+        <el-table-column prop="cat1_name" :label="$t('inventory.cat1')" min-width="70" />
+        <el-table-column prop="cat2_name" :label="$t('inventory.cat2')" min-width="70" />
+        <el-table-column prop="color" :label="$t('common.color')" min-width="70">
           <template #default="{ row }">{{ row.color || '-' }}</template>
         </el-table-column>
-        <el-table-column :label="$t('inventory.current_stock')" width="120">
+        <el-table-column :label="$t('inventory.current_stock')" min-width="110">
           <template #default="{ row }">
             <el-tag :type="row.is_alert ? 'danger' : 'success'" style="font-variant-numeric:tabular-nums">
               {{ row.current_stock }} {{ row.unit }}
@@ -41,7 +40,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="$t('common.operation')" width="130" fixed="right">
+        <el-table-column :label="$t('common.operation')" width="155" fixed="right">
           <template #default="{ row }">
             <el-space :size="6">
               <el-button size="small" @click="openHistory(row)">{{ $t('inventory.history') }}</el-button>
@@ -50,7 +49,6 @@
           </template>
         </el-table-column>
       </el-table>
-      </div>
 
       <div style="margin-top:12px;color:#9CA3AF;font-size:13px">
         {{ $t('inventory.total', { n: filtered.length }) }} · {{ $t('inventory.alert_count', { n: alertCount }) }}
