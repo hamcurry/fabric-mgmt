@@ -70,6 +70,35 @@
       </el-form>
     </el-card>
 
+    <!-- GLM-OCR 备用配置 -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <template #header>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b>{{ $t('glm_ocr.title') }}</b>
+          <el-tag v-if="glmConfigured" type="success" size="small">{{ glmForm.model }}</el-tag>
+          <el-tag v-else type="info" size="small">{{ $t('ai_settings.not_configured') }}</el-tag>
+        </div>
+      </template>
+      <p style="color:var(--color-text-secondary);font-size:13px;margin-bottom:16px">{{ $t('glm_ocr.desc') }}</p>
+      <el-form :model="glmForm" label-width="90px" style="max-width:520px">
+        <el-form-item :label="$t('ai_settings.api_key')">
+          <el-input v-model="glmForm.api_key" type="password" show-password :placeholder="$t('ai_settings.api_key_ph')" />
+        </el-form-item>
+        <el-form-item :label="$t('ai_settings.base_url')">
+          <el-input v-model="glmForm.base_url" placeholder="https://open.bigmodel.cn/api/paas/v4/" />
+        </el-form-item>
+        <el-form-item :label="$t('ai_settings.model')">
+          <el-input v-model="glmForm.model" placeholder="glm-4v-ocr" />
+        </el-form-item>
+        <el-form-item>
+          <el-space>
+            <el-button type="primary" :loading="glmSaving" @click="saveGlmConfig">{{ $t('ai_settings.save_btn') }}</el-button>
+            <el-button :loading="glmTesting" @click="testGlmConfig">{{ $t('ai_settings.test_btn') }}</el-button>
+          </el-space>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <!-- 下载备份 -->
     <el-card shadow="never" style="margin-bottom:16px">
       <template #header><b>{{ $t('backup.download_title') }}</b></template>
@@ -115,7 +144,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { aiSettingsApi } from '../api'
@@ -170,6 +199,34 @@ const testAiConfig = async () => {
   }
 }
 
+// ── GLM-OCR 配置 ─────────────────────────────────────────────────────
+const glmForm = ref({ api_key: '', base_url: 'https://open.bigmodel.cn/api/paas/v4/', model: 'glm-4v-ocr' })
+const glmSaving = ref(false)
+const glmTesting = ref(false)
+const glmConfigured = computed(() => !!(glmForm.value.api_key && glmForm.value.api_key !== '***' ? glmForm.value.api_key : localStorage.getItem('glm_ocr_configured') === 'true'))
+
+const saveGlmConfig = async () => {
+  glmSaving.value = true
+  try {
+    await aiSettingsApi.saveGlmOcr(glmForm.value)
+    if (glmForm.value.api_key) localStorage.setItem('glm_ocr_configured', 'true')
+    ElMessage.success(t('glm_ocr.save_ok'))
+  } catch (e) { ElMessage.error(e.message) }
+  finally { glmSaving.value = false }
+}
+
+const testGlmConfig = async () => {
+  glmSaving.value = true
+  try { await aiSettingsApi.saveGlmOcr(glmForm.value) } catch { glmSaving.value = false; return }
+  glmSaving.value = false
+  glmTesting.value = true
+  try {
+    const res = await aiSettingsApi.testGlmOcr()
+    ElMessage.success(t('glm_ocr.test_ok', { reply: res.reply }))
+  } catch (e) { ElMessage.error(t('glm_ocr.test_fail', { msg: e.message })) }
+  finally { glmTesting.value = false }
+}
+
 // ── 备份还原 ─────────────────────────────────────────────────────────
 const fileInput   = ref(null)
 const selectedFile = ref(null)
@@ -212,8 +269,10 @@ const confirmRestore = async () => {
 }
 
 onMounted(async () => {
-  const [p, cfg] = await Promise.all([aiSettingsApi.presets(), aiSettingsApi.get()])
+  const [p, cfg, glmCfg] = await Promise.all([aiSettingsApi.presets(), aiSettingsApi.get(), aiSettingsApi.getGlmOcr()])
   presets.value = p
   aiForm.value  = { ...aiForm.value, ...cfg }
+  glmForm.value = { ...glmForm.value, ...glmCfg }
+  if (glmCfg.configured) localStorage.setItem('glm_ocr_configured', 'true')
 })
 </script>

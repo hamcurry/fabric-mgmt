@@ -8,6 +8,10 @@
             <el-radio-button value="existing">{{ $t('stock_in.existing_fabric') }}</el-radio-button>
             <el-radio-button value="new">{{ $t('stock_in.new_and_stock') }}</el-radio-button>
           </el-radio-group>
+          <el-radio-group v-if="glmOcrAvailable" v-model="ocrProvider" size="small">
+            <el-radio-button value="primary">{{ $t('ocr.provider_main') }}</el-radio-button>
+            <el-radio-button value="glm_ocr">GLM-OCR</el-radio-button>
+          </el-radio-group>
           <el-button :loading="ocrLoading" icon="Camera" @click="triggerScan">{{ $t('ocr.scan_stock_in') }}</el-button>
         </el-space>
       </div>
@@ -247,6 +251,8 @@ const allCat2Options = computed(() =>
 const ocrFileInput = ref(null)
 const ocrLoading = ref(false)
 const ocrDialogVisible = ref(false)
+const ocrProvider = ref('primary')
+const glmOcrAvailable = ref(localStorage.getItem('glm_ocr_configured') === 'true')
 const ocrResult = ref(null)
 const exportingExcel = ref(false)
 
@@ -333,7 +339,7 @@ const handleOcrFile = async (e) => {
   }
   ocrLoading.value = true
   try {
-    const data = await ocrApi.stockIn(files)
+    const data = await ocrApi.stockIn(files, { provider: ocrProvider.value })
     data.items = (data.items || []).map(item => ({
       ...item,
       ...guessCat2(item.fabric_type)

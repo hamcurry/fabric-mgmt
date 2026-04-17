@@ -74,4 +74,28 @@ function isConfigured () {
   return !!(c.api_key && c.model)
 }
 
-module.exports = { getConfig, saveConfig, isConfigured, PRESETS }
+function getGlmOcrConfig () {
+  const main = getConfig()
+  if (main.glm_ocr_config) return main.glm_ocr_config
+  return { api_key: '', model: 'glm-4v-ocr', base_url: 'https://open.bigmodel.cn/api/paas/v4/', sdk_type: 'openai' }
+}
+
+function saveGlmOcrConfig (cfg) {
+  const main = getConfig()
+  main.glm_ocr_config = {
+    api_key:  cfg.api_key  || '',
+    model:    cfg.model    || 'glm-4v-ocr',
+    base_url: cfg.base_url || 'https://open.bigmodel.cn/api/paas/v4/',
+    sdk_type: 'openai'
+  }
+  const dir = path.dirname(CONFIG_PATH)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(main, null, 2), 'utf8')
+}
+
+function isGlmOcrConfigured () {
+  const c = getGlmOcrConfig()
+  return !!(c.api_key && c.model)
+}
+
+module.exports = { getConfig, saveConfig, isConfigured, getGlmOcrConfig, saveGlmOcrConfig, isGlmOcrConfigured, PRESETS }

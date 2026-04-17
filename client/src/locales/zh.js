@@ -243,7 +243,17 @@ export default {
     export_excel:     '导出Excel',
     applied:          '已应用到表单',
     error:            'OCR识别失败，请检查图片质量或重试',
-    image_too_large:  '图片过大（建议4MB以内），识别效果可能受影响'
+    image_too_large:  '图片过大（建议4MB以内），识别效果可能受影响',
+    provider_main:    '主AI',
+    provider_glm:     'GLM-OCR',
+    provider_label:   '识别引擎'
+  },
+  glm_ocr: {
+    title:    'GLM-OCR 备用识别（可选）',
+    desc:     '配置后可在扫描时自由切换两个识别引擎。默认使用智谱 glm-4v-ocr 模型。',
+    save_ok:  'GLM-OCR 配置已保存',
+    test_ok:  '连接成功，回复：{reply}',
+    test_fail:'连接失败：{msg}'
   },
   backup: {
     title: '备份与还原',

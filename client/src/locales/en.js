@@ -243,7 +243,17 @@ export default {
     export_excel:     'Export Excel',
     applied:          'Applied to form',
     error:            'OCR failed. Please check image quality and retry.',
-    image_too_large:  'Image too large (recommend < 4MB). Recognition quality may be affected.'
+    image_too_large:  'Image too large (recommend < 4MB). Recognition quality may be affected.',
+    provider_main:    'Main AI',
+    provider_glm:     'GLM-OCR',
+    provider_label:   'Engine'
+  },
+  glm_ocr: {
+    title:    'GLM-OCR Secondary Engine (Optional)',
+    desc:     'Configure to switch between two OCR engines during scanning. Uses glm-4v-ocr by default.',
+    save_ok:  'GLM-OCR config saved',
+    test_ok:  'Connection OK: {reply}',
+    test_fail:'Connection failed: {msg}'
   },
   backup: {
     title: 'Backup & Restore',

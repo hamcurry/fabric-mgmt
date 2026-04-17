@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 const ExcelJS = require('exceljs')
-const { getConfig, isConfigured } = require('../ai-config')
+const { getConfig, isConfigured, getGlmOcrConfig, isGlmOcrConfigured } = require('../ai-config')
 const { sanitizeImages } = require('../log-utils')
 
 const upload = multer({
@@ -78,12 +78,11 @@ const STOCK_OUT_PROMPT = `你是一个服装工厂仓库助手，负责从出货
 - style_image_region：如果图片中包含服装/款式效果图或产品照片，返回其在整张图中的位置（归一化坐标0-1，x/y为左上角，w/h为宽高）；如果没有产品图则 found 填 false，其余字段省略
 - 不要添加任何解释性文本`
 
-async function callAI(file, prompt) {
-  if (!isConfigured()) {
-    throw new Error('AI 未配置，请先在“备份/设置”页配置 API Key 和模型')
-  }
-
-  const cfg = getConfig()
+async function callAI(file, prompt, cfgOverride) {
+  const cfg = cfgOverride || (() => {
+    if (!isConfigured()) throw new Error('AI 未配置，请先在”备份/设置”页配置 API Key 和模型')
+    return getConfig()
+  })()
   const base64 = file.buffer.toString('base64')
   const isPdf = file.mimetype === 'application/pdf'
 
@@ -216,10 +215,10 @@ function detectStockOutMode(data, allResults) {
   }
 }
 
-async function recognizeFiles(files, prompt) {
+async function recognizeFiles(files, prompt, cfgOverride) {
   const results = []
   for (const file of files) {
-    const raw = await callAI(file, prompt)
+    const raw = await callAI(file, prompt, cfgOverride)
     results.push(parseJSON(raw))
   }
   return results
@@ -228,8 +227,13 @@ async function recognizeFiles(files, prompt) {
 router.post('/stock-in', upload.array('files', 10), async (req, res) => {
   const files = req.files || []
   if (!files.length) return res.status(400).json({ error: '请上传图片或 PDF 文件' })
+  let cfgOverride = null
+  if (req.body.provider === 'glm_ocr') {
+    if (!isGlmOcrConfigured()) return res.status(400).json({ error: 'GLM-OCR 未配置，请在备份/设置页配置' })
+    cfgOverride = getGlmOcrConfig()
+  }
   try {
-    const results = await recognizeFiles(files, STOCK_IN_PROMPT)
+    const results = await recognizeFiles(files, STOCK_IN_PROMPT, cfgOverride)
     const supplier = results.map(r => String(r.supplier || '').trim()).find(Boolean) || ''
     const items = mergeStockInItems(results.flatMap(r => Array.isArray(r.items) ? r.items : []))
     res.json({
@@ -245,8 +249,13 @@ router.post('/stock-in', upload.array('files', 10), async (req, res) => {
 router.post('/stock-out', upload.array('files', 10), async (req, res) => {
   const files = req.files || []
   if (!files.length) return res.status(400).json({ error: '请上传图片或 PDF 文件' })
+  let cfgOverride = null
+  if (req.body.provider === 'glm_ocr') {
+    if (!isGlmOcrConfigured()) return res.status(400).json({ error: 'GLM-OCR 未配置，请在备份/设置页配置' })
+    cfgOverride = getGlmOcrConfig()
+  }
   try {
-    const results = await recognizeFiles(files, STOCK_OUT_PROMPT)
+    const results = await recognizeFiles(files, STOCK_OUT_PROMPT, cfgOverride)
     const merged = {
       style_name: results.map(r => String(r.style_name || '').trim()).find(Boolean) || '',
       po_number: results.map(r => String(r.po_number || '').trim()).find(Boolean) || '',

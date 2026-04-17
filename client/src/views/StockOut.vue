@@ -3,7 +3,13 @@
     <template #header>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <b>{{ $t('stock_out.title') }}</b>
-        <el-button :loading="ocrLoading" icon="Camera" @click="triggerScan">{{ $t('ocr.scan_stock_out') }}</el-button>
+        <el-space>
+          <el-radio-group v-if="glmOcrAvailable" v-model="ocrProvider" size="small">
+            <el-radio-button value="primary">{{ $t('ocr.provider_main') }}</el-radio-button>
+            <el-radio-button value="glm_ocr">GLM-OCR</el-radio-button>
+          </el-radio-group>
+          <el-button :loading="ocrLoading" icon="Camera" @click="triggerScan">{{ $t('ocr.scan_stock_out') }}</el-button>
+        </el-space>
       </div>
     </template>
 
@@ -290,6 +296,8 @@ const fabricSelections = reactive({})
 const ocrFileInput = ref(null)
 const ocrLoading = ref(false)
 const ocrDialogVisible = ref(false)
+const ocrProvider = ref('primary')
+const glmOcrAvailable = ref(localStorage.getItem('glm_ocr_configured') === 'true')
 const ocrResult = ref(null)
 const styleCreating = ref(false)
 
@@ -609,7 +617,7 @@ const handleOcrFile = async (e) => {
   }
   ocrLoading.value = true
   try {
-    const data = await ocrApi.stockOut(files)
+    const data = await ocrApi.stockOut(files, { provider: ocrProvider.value })
     data.colors = Array.isArray(data.colors) ? data.colors : []
     data.usage_items = Array.isArray(data.usage_items) ? data.usage_items.map(item => ({
       ...item,

@@ -149,17 +149,17 @@
         </svg>
         <span>{{ $t('nav.inventory') }}</span>
       </router-link>
-      <router-link to="/stock/in" class="bottom-nav-item" :class="{ active: $route.path.startsWith('/stock') }" @click="closeSidebar">
+      <button class="bottom-nav-item" :class="{ active: $route.path.startsWith('/stock') }" @click="toggleStockMenu">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
           <path d="M5 12a1 1 0 102 0V7.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 7.414V12zM15 8a1 1 0 10-2 0v4.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 12.586V8z"/>
         </svg>
         <span>{{ $t('nav.stock') }}</span>
-      </router-link>
-      <router-link to="/timeline" class="bottom-nav-item" :class="{ active: $route.path === '/timeline' }" @click="closeSidebar">
+      </button>
+      <router-link to="/styles" class="bottom-nav-item" :class="{ active: $route.path.startsWith('/styles') }" @click="closeSidebar">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+          <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
         </svg>
-        <span>{{ $t('nav.timeline') }}</span>
+        <span>{{ $t('nav.styles') }}</span>
       </router-link>
       <button class="bottom-nav-item" :class="{ active: sidebarOpen }" @click="sidebarOpen = true">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -168,23 +168,52 @@
         <span>{{ $t('nav.more') }}</span>
       </button>
     </nav>
+
+    <!-- Stock action sheet (mobile) -->
+    <transition name="stock-fade">
+      <div v-if="stockMenuOpen" class="stock-sheet-overlay" @click="stockMenuOpen = false">
+        <div class="stock-sheet" @click.stop>
+          <div class="stock-sheet-label">{{ $t('nav.stock') }}</div>
+          <div class="stock-sheet-row">
+            <router-link to="/stock/in" class="stock-sheet-btn stock-in" @click="stockMenuOpen = false">
+              <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
+              <span>{{ $t('nav.stock_in') }}</span>
+            </router-link>
+            <router-link to="/stock/out" class="stock-sheet-btn stock-out" @click="stockMenuOpen = false">
+              <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <span>{{ $t('nav.stock_out') }}</span>
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </transition>
   </el-config-provider>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 
 const { locale } = useI18n()
+const route = useRoute()
 
 const epLocale = computed(() => locale.value === 'zh' ? zhCn : en)
 
 const isDark = ref(localStorage.getItem('theme') === 'dark')
 const sidebarOpen = ref(false)
+const stockMenuOpen = ref(false)
 
 const closeSidebar = () => { sidebarOpen.value = false }
+const toggleStockMenu = () => { stockMenuOpen.value = !stockMenuOpen.value }
+
+watch(() => route.path, () => { stockMenuOpen.value = false })
 
 const toggleTheme = () => {
   isDark.value = !isDark.value
@@ -460,6 +489,60 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+/* ── Stock action sheet ── */
+.stock-sheet-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+  background: rgba(0,0,0,0.35);
+  align-items: flex-end;
+}
+.stock-sheet {
+  width: 100%;
+  background: var(--color-bg-surface);
+  border-radius: 16px 16px 0 0;
+  padding: 16px 16px calc(72px + env(safe-area-inset-bottom));
+}
+.stock-sheet-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-tertiary);
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.stock-sheet-row {
+  display: flex;
+  gap: 10px;
+}
+.stock-sheet-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 12px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity var(--dur-fast);
+}
+.stock-sheet-btn:active { opacity: 0.8; }
+.stock-in  { background: var(--color-success-bg);  color: var(--color-success-text); }
+.stock-out { background: var(--color-warning-bg);  color: var(--color-warning-text); }
+
+.stock-fade-enter-active, .stock-fade-leave-active { transition: opacity var(--dur-fast); }
+.stock-fade-enter-from, .stock-fade-leave-to { opacity: 0; }
+
+/* ── Desktop content max-width ── */
+@media (min-width: 1600px) {
+  .content { padding-left: max(32px, calc((100% - 1400px) / 2)); padding-right: max(32px, calc((100% - 1400px) / 2)); }
+}
+
 /* ══ Mobile Responsive ══ */
 @media (max-width: 768px) {
   .sidebar-overlay { display: block; }
@@ -495,5 +578,6 @@ onMounted(() => {
     box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
     padding-bottom: env(safe-area-inset-bottom);
   }
+  .stock-sheet-overlay { display: flex; }
 }
 </style>
