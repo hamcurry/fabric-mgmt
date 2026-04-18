@@ -92,6 +92,7 @@ try { db.exec("ALTER TABLE stock_logs ADD COLUMN usage_source TEXT DEFAULT ''") 
 try { db.exec("ALTER TABLE stock_logs ADD COLUMN usage_per_piece_snapshot REAL DEFAULT NULL") } catch {}
 try { db.exec("ALTER TABLE stock_logs ADD COLUMN style_material_cat2_id INTEGER DEFAULT NULL") } catch {}
 try { db.exec("ALTER TABLE stock_logs ADD COLUMN calc_snapshot_json TEXT DEFAULT ''") } catch {}
+try { db.exec("ALTER TABLE fabrics ADD COLUMN image_base64 TEXT DEFAULT ''") } catch {}
 
 // 预置一级类目（仅首次）
 const presets = ['面布', '里布', '衬布', '蕾丝', '花边', '辅料']
