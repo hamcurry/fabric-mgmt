@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 const ExcelJS = require('exceljs')
-const { getConfig, isConfigured, getGlmOcrConfig, isGlmOcrConfigured } = require('../ai-config')
+const { getConfig, isConfigured } = require('../ai-config')
 const { sanitizeImages } = require('../log-utils')
 
 const upload = multer({
@@ -96,7 +96,7 @@ async function callAI(file, prompt, cfgOverride) {
 
     const params = {
       model: cfg.model,
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: prompt }] }]
     }
     if (isPdf) params.betas = ['pdfs-2024-09-25']
@@ -117,7 +117,7 @@ async function callAI(file, prompt, cfgOverride) {
 
   const resp = await client.chat.completions.create({
     model: cfg.model,
-    max_tokens: 1024,
+    max_tokens: 2048,
     messages: [{
       role: 'user',
       content: [
@@ -126,12 +126,25 @@ async function callAI(file, prompt, cfgOverride) {
       ]
     }]
   })
-  return resp.choices[0].message.content
+  const choice = resp.choices[0]
+  if (!choice.message.content && choice.message.refusal) {
+    throw new Error(`模型拒绝处理：${choice.message.refusal}`)
+  }
+  if (!choice.message.content) {
+    console.error('[OCR] empty response:', JSON.stringify({ finish_reason: choice.finish_reason, message: choice.message }))
+    throw new Error(`模型返回空内容（finish_reason: ${choice.finish_reason}）`)
+  }
+  return choice.message.content
 }
 
 function parseJSON(raw) {
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
-  return JSON.parse(cleaned)
+  const cleaned = (raw || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+  if (!cleaned) throw new Error(`模型返回空内容（原始：${JSON.stringify(raw?.slice(0, 200))}）`)
+  try {
+    return JSON.parse(cleaned)
+  } catch (e) {
+    throw new Error(`JSON 解析失败：${e.message}（原始内容：${JSON.stringify(cleaned.slice(0, 300))}）`)
+  }
 }
 
 function normalizeStockInItem(item = {}) {
@@ -227,13 +240,8 @@ async function recognizeFiles(files, prompt, cfgOverride) {
 router.post('/stock-in', upload.array('files', 10), async (req, res) => {
   const files = req.files || []
   if (!files.length) return res.status(400).json({ error: '请上传图片或 PDF 文件' })
-  let cfgOverride = null
-  if (req.body.provider === 'glm_ocr') {
-    if (!isGlmOcrConfigured()) return res.status(400).json({ error: 'GLM-OCR 未配置，请在备份/设置页配置' })
-    cfgOverride = getGlmOcrConfig()
-  }
   try {
-    const results = await recognizeFiles(files, STOCK_IN_PROMPT, cfgOverride)
+    const results = await recognizeFiles(files, STOCK_IN_PROMPT, null)
     const supplier = results.map(r => String(r.supplier || '').trim()).find(Boolean) || ''
     const items = mergeStockInItems(results.flatMap(r => Array.isArray(r.items) ? r.items : []))
     res.json({
@@ -249,13 +257,8 @@ router.post('/stock-in', upload.array('files', 10), async (req, res) => {
 router.post('/stock-out', upload.array('files', 10), async (req, res) => {
   const files = req.files || []
   if (!files.length) return res.status(400).json({ error: '请上传图片或 PDF 文件' })
-  let cfgOverride = null
-  if (req.body.provider === 'glm_ocr') {
-    if (!isGlmOcrConfigured()) return res.status(400).json({ error: 'GLM-OCR 未配置，请在备份/设置页配置' })
-    cfgOverride = getGlmOcrConfig()
-  }
   try {
-    const results = await recognizeFiles(files, STOCK_OUT_PROMPT, cfgOverride)
+    const results = await recognizeFiles(files, STOCK_OUT_PROMPT, null)
     const merged = {
       style_name: results.map(r => String(r.style_name || '').trim()).find(Boolean) || '',
       po_number: results.map(r => String(r.po_number || '').trim()).find(Boolean) || '',

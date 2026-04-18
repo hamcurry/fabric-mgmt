@@ -4,10 +4,6 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <b>{{ $t('stock_out.title') }}</b>
         <el-space>
-          <el-radio-group v-if="glmOcrAvailable" v-model="ocrProvider" size="small">
-            <el-radio-button value="primary">{{ $t('ocr.provider_main') }}</el-radio-button>
-            <el-radio-button value="glm_ocr">GLM-OCR</el-radio-button>
-          </el-radio-group>
           <el-button :loading="ocrLoading" icon="Camera" @click="triggerScan">{{ $t('ocr.scan_stock_out') }}</el-button>
         </el-space>
       </div>
@@ -151,9 +147,7 @@
         <el-form label-width="100px" size="small">
           <el-form-item label="识别款号">
             <div style="display:flex;gap:8px;align-items:center;width:100%">
-              <span style="color:var(--color-text-secondary);white-space:nowrap;font-size:13px">
-                {{ ocrResult.style_name || '未识别' }}
-              </span>
+              <el-input v-model="ocrResult.style_name" size="small" placeholder="未识别" style="flex:1" />
               <el-button
                 v-if="ocrResult.style_name"
                 size="small"
@@ -174,8 +168,11 @@
         <div style="overflow-x:auto">
         <el-table :data="ocrResult.usage_items" size="small" border style="min-width:600px">
           <el-table-column label="面料类型" prop="fabric_type" min-width="120">
-            <template #default="{ row }">
-              <el-input v-model="row.fabric_type" size="small" />
+            <template #default="{ row, $index }">
+              <div style="display:flex;gap:4px;align-items:center">
+                <el-input v-model="row.fabric_type" size="small" style="flex:1" />
+                <el-button icon="Delete" size="small" type="danger" plain circle @click="ocrResult.usage_items.splice($index, 1)" />
+              </div>
             </template>
           </el-table-column>
           <el-table-column label="面料分类" min-width="150">
@@ -213,28 +210,27 @@
               {{ estimatedPerPiece(row) }}
             </template>
           </el-table-column>
-          <el-table-column width="46">
-            <template #default="{ $index }">
-              <el-button icon="Delete" size="small" type="danger" plain circle @click="ocrResult.usage_items.splice($index, 1)" />
-            </template>
-          </el-table-column>
         </el-table>
         </div>
         <el-button size="small" link icon="Plus" style="margin-top:8px" @click="addOcrUsageItem">添加用量行</el-button>
 
         <el-divider>{{ $t('ocr.color_pieces') }}</el-divider>
         <el-table :data="ocrResult.colors" size="small" border>
-          <el-table-column :label="$t('common.color')" prop="color" width="150">
-            <template #default="{ row }">
-              <el-input v-model="row.color" size="small" />
+          <el-table-column :label="$t('common.color')" prop="color">
+            <template #default="{ row, $index }">
+              <div style="display:flex;gap:4px;align-items:center">
+                <el-input v-model="row.color" size="small" style="flex:1" />
+                <el-button icon="Delete" size="small" type="danger" plain circle @click="ocrResult.colors.splice($index, 1)" />
+              </div>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('common.pieces')" prop="pieces">
+          <el-table-column :label="$t('common.pieces')" prop="pieces" width="140">
             <template #default="{ row }">
               <el-input-number v-model="row.pieces" :min="0" :precision="0" size="small" style="width:110px" />
             </template>
           </el-table-column>
         </el-table>
+        <el-button size="small" link icon="Plus" style="margin-top:6px" @click="ocrResult.colors.push({ color: '', pieces: 0 })">{{ $t('common.add') }}</el-button>
       </div>
 
       <template #footer>
@@ -296,8 +292,6 @@ const fabricSelections = reactive({})
 const ocrFileInput = ref(null)
 const ocrLoading = ref(false)
 const ocrDialogVisible = ref(false)
-const ocrProvider = ref('primary')
-const glmOcrAvailable = ref(localStorage.getItem('glm_ocr_configured') === 'true')
 const ocrResult = ref(null)
 const styleCreating = ref(false)
 
@@ -617,7 +611,7 @@ const handleOcrFile = async (e) => {
   }
   ocrLoading.value = true
   try {
-    const data = await ocrApi.stockOut(files, { provider: ocrProvider.value })
+    const data = await ocrApi.stockOut(files)
     data.colors = Array.isArray(data.colors) ? data.colors : []
     data.usage_items = Array.isArray(data.usage_items) ? data.usage_items.map(item => ({
       ...item,

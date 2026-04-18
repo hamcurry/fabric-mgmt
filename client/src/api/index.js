@@ -65,26 +65,21 @@ export const exportUrl = (params) => {
 }
 
 export const ocrApi = {
-  stockIn:  (files, opts = {}) => {
+  stockIn:  (files) => {
     const fd = new FormData()
     ;(Array.isArray(files) ? files : [files]).filter(Boolean).forEach(file => fd.append('files', file))
-    if (opts.provider) fd.append('provider', opts.provider)
     return http.post('/ocr/stock-in', fd)
   },
-  stockOut: (files, opts = {}) => {
+  stockOut: (files) => {
     const fd = new FormData()
     ;(Array.isArray(files) ? files : [files]).filter(Boolean).forEach(file => fd.append('files', file))
-    if (opts.provider) fd.append('provider', opts.provider)
     return http.post('/ocr/stock-out', fd)
   }
 }
 
 export const aiSettingsApi = {
-  presets:     ()     => http.get('/ai-settings/presets'),
-  get:         ()     => http.get('/ai-settings'),
-  save:        (data) => http.post('/ai-settings', data),
-  test:        ()     => http.post('/ai-settings/test'),
-  getGlmOcr:   ()     => http.get('/ai-settings/glm-ocr'),
-  saveGlmOcr:  (data) => http.post('/ai-settings/glm-ocr', data),
-  testGlmOcr:  ()     => http.post('/ai-settings/glm-ocr/test')
+  presets: ()     => http.get('/ai-settings/presets'),
+  get:     ()     => http.get('/ai-settings'),
+  save:    (data) => http.post('/ai-settings', data),
+  test:    ()     => http.post('/ai-settings/test')
 }

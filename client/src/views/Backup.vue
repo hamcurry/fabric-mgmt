@@ -70,36 +70,6 @@
       </el-form>
     </el-card>
 
-    <!-- GLM-OCR 备用配置 -->
-    <el-card shadow="never" style="margin-bottom:16px">
-      <template #header>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <b>{{ $t('glm_ocr.title') }}</b>
-          <el-tag v-if="glmConfigured" type="success" size="small">{{ glmForm.model }}</el-tag>
-          <el-tag v-else type="info" size="small">{{ $t('ai_settings.not_configured') }}</el-tag>
-        </div>
-      </template>
-      <p style="color:var(--color-text-secondary);font-size:13px;margin-bottom:16px">{{ $t('glm_ocr.desc') }}</p>
-      <el-form :model="glmForm" label-width="90px" style="max-width:520px">
-        <el-form-item label="接口地址">
-          <el-input v-model="glmForm.base_url" placeholder="http://localhost:11434/v1" />
-          <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:4px">本地模型填 Ollama/LMStudio 地址；云端填供应商地址</div>
-        </el-form-item>
-        <el-form-item label="API Key">
-          <el-input v-model="glmForm.api_key" type="password" show-password placeholder="本地模型无需填写（可留空）" />
-        </el-form-item>
-        <el-form-item :label="$t('ai_settings.model')">
-          <el-input v-model="glmForm.model" placeholder="glm-4v-ocr" />
-        </el-form-item>
-        <el-form-item>
-          <el-space>
-            <el-button type="primary" :loading="glmSaving" @click="saveGlmConfig">{{ $t('ai_settings.save_btn') }}</el-button>
-            <el-button :loading="glmTesting" @click="testGlmConfig">{{ $t('ai_settings.test_btn') }}</el-button>
-          </el-space>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
     <!-- 下载备份 -->
     <el-card shadow="never" style="margin-bottom:16px">
       <template #header><b>{{ $t('backup.download_title') }}</b></template>
@@ -145,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { aiSettingsApi } from '../api'
@@ -179,7 +149,6 @@ const saveAiConfig = async () => {
 }
 
 const testAiConfig = async () => {
-  // 先保存再测试，确保测试的是最新填写的值
   aiSaving.value = true
   try {
     await aiSettingsApi.save(aiForm.value)
@@ -198,34 +167,6 @@ const testAiConfig = async () => {
   } finally {
     aiTesting.value = false
   }
-}
-
-// ── GLM-OCR 配置 ─────────────────────────────────────────────────────
-const glmForm = ref({ api_key: '', base_url: 'https://open.bigmodel.cn/api/paas/v4/', model: 'glm-4v-ocr' })
-const glmSaving = ref(false)
-const glmTesting = ref(false)
-const glmConfigured = computed(() => !!(glmForm.value.model && glmForm.value.base_url))
-
-const saveGlmConfig = async () => {
-  glmSaving.value = true
-  try {
-    await aiSettingsApi.saveGlmOcr(glmForm.value)
-    if (glmForm.value.model && glmForm.value.base_url) localStorage.setItem('glm_ocr_configured', 'true')
-    ElMessage.success(t('glm_ocr.save_ok'))
-  } catch (e) { ElMessage.error(e.message) }
-  finally { glmSaving.value = false }
-}
-
-const testGlmConfig = async () => {
-  glmSaving.value = true
-  try { await aiSettingsApi.saveGlmOcr(glmForm.value) } catch { glmSaving.value = false; return }
-  glmSaving.value = false
-  glmTesting.value = true
-  try {
-    const res = await aiSettingsApi.testGlmOcr()
-    ElMessage.success(t('glm_ocr.test_ok', { reply: res.reply }))
-  } catch (e) { ElMessage.error(t('glm_ocr.test_fail', { msg: e.message })) }
-  finally { glmTesting.value = false }
 }
 
 // ── 备份还原 ─────────────────────────────────────────────────────────
@@ -270,10 +211,8 @@ const confirmRestore = async () => {
 }
 
 onMounted(async () => {
-  const [p, cfg, glmCfg] = await Promise.all([aiSettingsApi.presets(), aiSettingsApi.get(), aiSettingsApi.getGlmOcr()])
+  const [p, cfg] = await Promise.all([aiSettingsApi.presets(), aiSettingsApi.get()])
   presets.value = p
   aiForm.value  = { ...aiForm.value, ...cfg }
-  glmForm.value = { ...glmForm.value, ...glmCfg }
-  if (glmCfg.configured) localStorage.setItem('glm_ocr_configured', 'true')
 })
 </script>
