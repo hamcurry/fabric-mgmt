@@ -35,7 +35,7 @@
             >{{ $t('fabrics.add_color') }}</el-button>
           </div>
 
-          <el-table :data="cat2.fabrics" size="small" border style="margin-left:16px">
+          <el-table class="fabric-desktop-table" :data="cat2.fabrics" size="small" border style="margin-left:16px">
             <el-table-column prop="color" :label="$t('common.color')" min-width="100">
               <template #default="{ row }">
                 <span v-if="row.color">{{ row.color }}</span>
@@ -65,6 +65,32 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <!-- 移动端卡片 -->
+          <div class="fabric-mobile-cards">
+            <div v-for="row in cat2.fabrics" :key="row.id" class="fabric-card">
+              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+                <el-tag :type="row.is_alert ? 'danger' : 'success'" style="flex-shrink:0">
+                  {{ row.current_stock }} {{ row.unit }}
+                </el-tag>
+                <span style="font-size:14px;font-weight:500">
+                  {{ row.color || $t('fabrics.unspecified_color') }}
+                </span>
+                <span style="font-size:12px;color:var(--color-text-tertiary);margin-left:auto;flex-shrink:0">
+                  预警 {{ row.alert_threshold }}{{ row.unit }}
+                </span>
+              </div>
+              <el-dropdown trigger="click" size="small">
+                <el-button size="small" circle icon="MoreFilled" />
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click="openFabricDialog(row, cat1.id, cat2.id)">{{ $t('common.edit') }}</el-dropdown-item>
+                    <el-dropdown-item class="danger-item" @click="confirmRemoveFabric(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </div>
         </div>
 
         <div v-if="!cat1.children.length" style="color:var(--color-text-tertiary);font-size:13px;padding:8px 0">
@@ -269,6 +295,13 @@ const removeFabric = async (id) => {
   }
 }
 
+const confirmRemoveFabric = async (id) => {
+  try {
+    await ElMessageBox.confirm(t('fabrics.confirm_delete_fabric'), t('common.confirm'), { type: 'warning' })
+    await removeFabric(id)
+  } catch {}
+}
+
 const quickAddCat2 = async () => {
   if (!fabricForm.value.cat1_id) return
   const { value } = await ElMessageBox.prompt(t('fabrics.new_sub_cat_prompt'), t('fabrics.new_sub_cat_title'), {
@@ -342,3 +375,21 @@ onMounted(() => {
   loadCatTree()
 })
 </script>
+
+<style scoped>
+.fabric-mobile-cards { display: none; flex-direction: column; gap: 8px; margin-left: 16px; margin-top: 4px; }
+.fabric-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+:deep(.danger-item) { color: var(--el-color-danger) !important; }
+@media (max-width: 640px) {
+  :deep(.fabric-desktop-table) { display: none; }
+  .fabric-mobile-cards { display: flex; }
+}
+</style>

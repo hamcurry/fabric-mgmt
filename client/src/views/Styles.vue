@@ -11,7 +11,7 @@
       </div>
     </template>
 
-    <el-table :data="styles" v-loading="loading">
+    <el-table class="style-desktop-table" :data="styles" v-loading="loading">
       <el-table-column :label="$t('styles.style_image')" width="80">
         <template #default="{ row }">
           <el-tooltip
@@ -71,6 +71,44 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 移动端卡片列表 -->
+    <div class="style-mobile-cards" v-loading="loading">
+      <div v-for="row in styles" :key="row.id" class="style-card">
+        <el-image
+          v-if="row.image_base64"
+          :src="row.image_base64"
+          fit="cover"
+          class="style-card-img"
+          :preview-src-list="[row.image_base64]"
+          preview-teleported
+        />
+        <div v-else class="style-card-img style-card-no-img">{{ $t('styles.no_image') }}</div>
+        <div class="style-card-body">
+          <div class="style-card-name">
+            <el-link @click="$router.push(`/styles/${row.id}`)">{{ row.name }}</el-link>
+          </div>
+          <div v-if="row.customer" class="style-card-sub">{{ row.customer }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
+            <el-tag v-for="m in (row.materials || []).slice(0, 3)" :key="m.id" size="small">{{ materialSummary(m) }}</el-tag>
+            <el-tag v-if="(row.materials || []).length > 3" size="small" type="info">+{{ row.materials.length - 3 }}</el-tag>
+          </div>
+        </div>
+        <el-dropdown trigger="click" size="small" style="flex-shrink:0">
+          <el-button size="small" circle icon="MoreFilled" />
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="$router.push(`/styles/${row.id}`)">{{ $t('common.detail') }}</el-dropdown-item>
+              <el-dropdown-item @click="openDialog(row)">{{ $t('common.edit') }}</el-dropdown-item>
+              <el-dropdown-item class="danger-item" @click="confirmRemove(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
+      <div v-if="!styles.length && !loading" style="text-align:center;color:var(--color-text-tertiary);padding:40px">
+        {{ $t('styles.no_data') || '暂无款式' }}
+      </div>
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="form.id ? $t('styles.edit_style') : $t('styles.new_style')" width="min(760px, 98vw)">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="90px">
@@ -183,7 +221,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { stylesApi, categoriesApi } from '../api'
 
 const { t } = useI18n()
@@ -319,6 +357,13 @@ const remove = async (id) => {
   }
 }
 
+const confirmRemove = async (id) => {
+  try {
+    await ElMessageBox.confirm(t('styles.confirm_delete'), t('common.confirm'), { type: 'warning' })
+    await remove(id)
+  } catch {}
+}
+
 onMounted(async () => {
   load()
   catTree.value = await categoriesApi.tree()
@@ -352,5 +397,18 @@ onMounted(async () => {
   .material-row > :nth-child(3) { grid-column: 1; grid-row: 2; }
   .material-row > :nth-child(4) { grid-column: 2 / span 2; grid-row: 2; }
   .material-row-labels { display: none; }
+}
+
+.style-mobile-cards { display: none; flex-direction: column; gap: 10px; }
+.style-card { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-surface); }
+.style-card-img { width: 56px; height: 56px; border-radius: 6px; flex-shrink: 0; object-fit: cover; }
+.style-card-no-img { background: var(--color-bg-subtle); display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 11px; }
+.style-card-body { flex: 1; min-width: 0; }
+.style-card-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.style-card-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+:deep(.danger-item) { color: var(--el-color-danger) !important; }
+@media (max-width: 640px) {
+  :deep(.style-desktop-table) { display: none; }
+  .style-mobile-cards { display: flex; }
 }
 </style>
