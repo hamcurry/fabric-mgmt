@@ -88,10 +88,14 @@ router.put('/:id', (req, res) => {
 
 // 删除面料
 router.delete('/:id', (req, res) => {
-  const used = db.prepare('SELECT id FROM style_materials WHERE fabric_id=?').get(req.params.id)
-  if (used) return res.status(400).json({ error: '该面料已被款式引用，无法删除' })
-  db.prepare('DELETE FROM fabrics WHERE id=?').run(req.params.id)
-  res.json({ ok: true })
+  const usedInLog = db.prepare('SELECT id FROM stock_logs WHERE fabric_id=?').get(req.params.id)
+  if (usedInLog) return res.status(400).json({ error: '该面料存在入出库记录，无法删除' })
+  try {
+    db.prepare('DELETE FROM fabrics WHERE id=?').run(req.params.id)
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: '删除失败：' + e.message })
+  }
 })
 
 // 工具函数：获取面料的完整显示名（供其他 route 调用）

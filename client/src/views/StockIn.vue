@@ -96,16 +96,29 @@
       :close-on-click-modal="false"
     >
       <div v-if="ocrResult">
+        <!-- 原图预览 -->
+        <div v-if="ocrResult.source_images?.length" class="ocr-image-strip">
+          <el-image
+            v-for="(img, i) in ocrResult.source_images"
+            :key="i"
+            :src="`data:${img.mime_type};base64,${img.data_base64}`"
+            :preview-src-list="ocrResult.source_images.map(m => `data:${m.mime_type};base64,${m.data_base64}`)"
+            :initial-index="i"
+            fit="cover"
+            preview-teleported
+            class="ocr-thumb"
+          />
+        </div>
+
         <el-descriptions :column="1" border size="small" style="margin-bottom:16px">
           <el-descriptions-item :label="$t('ocr.supplier')">
             <el-input v-model="ocrResult.supplier" size="small" />
           </el-descriptions-item>
-          <el-descriptions-item :label="$t('stock_in.source_images')">
-            {{ $t('inventory.image_count', { n: ocrResult.source_images?.length || 0 }) }}
-          </el-descriptions-item>
         </el-descriptions>
 
-        <el-table :data="ocrResult.items" size="small" border>
+        <!-- 桌面表格 -->
+        <div style="overflow-x:auto">
+        <el-table class="ocr-items-table" :data="ocrResult.items" size="small" border style="min-width:700px">
           <el-table-column :label="$t('stock_in.cat1')" min-width="170">
             <template #default="{ row }">
               <div style="display:flex;gap:6px;align-items:center">
@@ -174,6 +187,46 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
+
+        <!-- 移动端卡片 -->
+        <div class="ocr-item-cards">
+          <div v-for="(row, idx) in ocrResult.items" :key="idx" class="ocr-item-card">
+            <div class="card-row">
+              <span class="card-lbl">{{ $t('ocr.fabric_type') }}</span>
+              <el-input v-model="row.fabric_type" size="small" style="flex:1" />
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">{{ $t('stock_in.cat1') }}</span>
+              <el-select v-model="row.cat1_id" filterable size="small" style="flex:1" :placeholder="$t('stock_in.select_cat1')" @change="onOcrCat1Change(row)">
+                <el-option v-for="c in cat1List" :key="c.id" :label="c.name" :value="c.id" />
+              </el-select>
+              <el-button size="small" link @click="openAddCatDialog('cat1', row)">+</el-button>
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">{{ $t('stock_in.fabric_category') }}</span>
+              <el-select v-model="row.cat2_id" filterable size="small" style="flex:1" :placeholder="$t('stock_in.select_cat2_for_ocr')">
+                <el-option v-for="c in getCat2OptionsByCat1(row.cat1_id)" :key="c.id" :label="c.name" :value="c.id" />
+              </el-select>
+              <el-button size="small" link @click="openAddCatDialog('cat2', row)">+</el-button>
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">{{ $t('common.color') }}</span>
+              <el-select v-model="row.color" size="small" filterable allow-create clearable default-first-option style="flex:1" :placeholder="$t('stock_in.select_or_create_color')">
+                <el-option v-for="c in getColorsByCat2(row.cat2_id)" :key="c" :label="c" :value="c" />
+              </el-select>
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">{{ $t('stock_in.stock_qty') }}</span>
+              <el-input-number v-model="row.quantity" :min="0" :precision="2" size="small" style="width:100px" />
+              <el-input v-model="row.unit" size="small" style="width:56px;margin-left:4px" />
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">{{ $t('common.note') }}</span>
+              <el-input v-model="row.note" size="small" style="flex:1" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <template #footer>
@@ -484,3 +537,38 @@ onMounted(async () => {
   catTree.value = c
 })
 </script>
+
+<style scoped>
+.ocr-image-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.ocr-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  cursor: zoom-in;
+  border: 1px solid var(--color-border);
+}
+.ocr-item-cards { display: none; flex-direction: column; gap: 10px; }
+.ocr-item-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-row { display: flex; align-items: center; gap: 6px; }
+.card-lbl { font-size: 12px; color: var(--color-text-secondary); width: 52px; flex-shrink: 0; }
+@media (max-width: 640px) {
+  :deep(.ocr-items-table) { display: none; }
+  .ocr-item-cards { display: flex; }
+}
+</style>

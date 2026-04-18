@@ -144,6 +144,20 @@
       :close-on-click-modal="false"
     >
       <div v-if="ocrResult">
+        <!-- 原图预览 -->
+        <div v-if="ocrResult.source_images?.length" class="ocr-image-strip">
+          <el-image
+            v-for="(img, i) in ocrResult.source_images"
+            :key="i"
+            :src="`data:${img.mime_type};base64,${img.data_base64}`"
+            :preview-src-list="ocrResult.source_images.map(m => `data:${m.mime_type};base64,${m.data_base64}`)"
+            :initial-index="i"
+            fit="cover"
+            preview-teleported
+            class="ocr-thumb"
+          />
+        </div>
+
         <el-form label-width="100px" size="small">
           <el-form-item label="识别款号">
             <div style="display:flex;gap:8px;align-items:center;width:100%">
@@ -166,7 +180,7 @@
           识别到 {{ totalOcrPieces }} 件，请补充面料分类：
         </div>
         <div style="overflow-x:auto">
-        <el-table :data="ocrResult.usage_items" size="small" border style="min-width:600px">
+        <el-table class="ocr-usage-table" :data="ocrResult.usage_items" size="small" border style="min-width:600px">
           <el-table-column label="面料类型" prop="fabric_type" min-width="120">
             <template #default="{ row, $index }">
               <div style="display:flex;gap:4px;align-items:center">
@@ -212,10 +226,42 @@
           </el-table-column>
         </el-table>
         </div>
+
+        <!-- 用量移动端卡片 -->
+        <div class="ocr-usage-cards">
+          <div v-for="(row, idx) in ocrResult.usage_items" :key="idx" class="ocr-item-card">
+            <div class="card-row">
+              <span class="card-lbl">面料类型</span>
+              <el-input v-model="row.fabric_type" size="small" style="flex:1" />
+              <el-button icon="Delete" size="small" type="danger" plain circle @click="ocrResult.usage_items.splice(idx, 1)" />
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">大类</span>
+              <el-select v-model="row.cat1_id" filterable size="small" style="flex:1" placeholder="大类" @change="onOcrCat1Change(row)">
+                <el-option v-for="c in catTree" :key="c.id" :label="c.name" :value="c.id" />
+              </el-select>
+              <el-button size="small" link @click="openAddCatDialog('cat1', row)">+</el-button>
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">细类</span>
+              <el-select v-model="row.cat2_id" filterable size="small" style="flex:1" placeholder="细类">
+                <el-option v-for="c in getCat2OptionsByCat1(row.cat1_id)" :key="c.id" :label="c.name" :value="c.id" />
+              </el-select>
+              <el-button size="small" link @click="openAddCatDialog('cat2', row)">+</el-button>
+            </div>
+            <div class="card-row">
+              <span class="card-lbl">用量</span>
+              <el-input-number v-model="row.quantity" :min="0" :precision="2" size="small" style="width:100px" />
+              <el-input v-model="row.unit" size="small" style="width:52px;margin-left:4px" />
+              <span style="font-size:12px;color:var(--color-text-secondary);margin-left:4px">{{ estimatedPerPiece(row) }}</span>
+            </div>
+          </div>
+        </div>
+
         <el-button size="small" link icon="Plus" style="margin-top:8px" @click="addOcrUsageItem">添加用量行</el-button>
 
         <el-divider>{{ $t('ocr.color_pieces') }}</el-divider>
-        <el-table :data="ocrResult.colors" size="small" border>
+        <el-table class="ocr-colors-table" :data="ocrResult.colors" size="small" border>
           <el-table-column :label="$t('common.color')" prop="color">
             <template #default="{ row, $index }">
               <div style="display:flex;gap:4px;align-items:center">
@@ -230,6 +276,16 @@
             </template>
           </el-table-column>
         </el-table>
+        <!-- 颜色移动端卡片 -->
+        <div class="ocr-color-cards">
+          <div v-for="(row, idx) in ocrResult.colors" :key="idx" class="ocr-color-card">
+            <el-input v-model="row.color" size="small" :placeholder="$t('common.color')" style="flex:1" />
+            <el-input-number v-model="row.pieces" :min="0" :precision="0" size="small" style="width:100px" />
+            <span style="font-size:12px;color:var(--color-text-secondary)">件</span>
+            <el-button icon="Delete" size="small" type="danger" plain circle @click="ocrResult.colors.splice(idx, 1)" />
+          </div>
+        </div>
+
         <el-button size="small" link icon="Plus" style="margin-top:6px" @click="ocrResult.colors.push({ color: '', pieces: 0 })">{{ $t('common.add') }}</el-button>
       </div>
 
@@ -668,3 +724,47 @@ onMounted(async () => {
   await refreshBaseData()
 })
 </script>
+
+<style scoped>
+.ocr-image-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.ocr-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  cursor: zoom-in;
+  border: 1px solid var(--color-border);
+}
+.ocr-usage-cards, .ocr-color-cards { display: none; flex-direction: column; gap: 8px; }
+.ocr-item-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ocr-color-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+.card-row { display: flex; align-items: center; gap: 6px; }
+.card-lbl { font-size: 12px; color: var(--color-text-secondary); width: 44px; flex-shrink: 0; }
+@media (max-width: 640px) {
+  :deep(.ocr-usage-table), :deep(.ocr-colors-table) { display: none; }
+  .ocr-usage-cards, .ocr-color-cards { display: flex; }
+}
+</style>
