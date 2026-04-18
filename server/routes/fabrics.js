@@ -6,7 +6,8 @@ const db = require('../db')
 router.get('/', (req, res) => {
   const { cat1_id, cat2_id } = req.query
   let sql = `
-    SELECT f.*,
+    SELECT f.id, f.cat2_id, f.color, f.unit, f.current_stock, f.alert_threshold, f.created_at,
+           f.image_base64,
            c2.name AS cat2_name, c2.cat1_id,
            c1.name AS cat1_name,
            (f.current_stock <= f.alert_threshold) AS is_alert
@@ -25,7 +26,8 @@ router.get('/', (req, res) => {
 // 获取分组树（用于前端树状展示）
 router.get('/tree', (req, res) => {
   const rows = db.prepare(`
-    SELECT f.*,
+    SELECT f.id, f.cat2_id, f.color, f.unit, f.current_stock, f.alert_threshold, f.created_at,
+           f.image_base64,
            c2.name AS cat2_name, c2.cat1_id,
            c1.name AS cat1_name,
            (f.current_stock <= f.alert_threshold) AS is_alert
@@ -53,7 +55,7 @@ router.get('/tree', (req, res) => {
       alert_threshold: row.alert_threshold,
       is_alert: row.is_alert,
       created_at: row.created_at,
-      // 给前端用的完整显示名
+      image_base64: row.image_base64 || '',
       full_name: `${row.cat1_name} / ${row.cat2_name} / ${row.color || '无颜色'}`
     })
   }
@@ -67,22 +69,23 @@ router.get('/tree', (req, res) => {
 
 // 新建面料
 router.post('/', (req, res) => {
-  const { cat2_id, color = '', unit = '米', current_stock = 0, alert_threshold = 20 } = req.body
+  const { cat2_id, color = '', unit = '米', current_stock = 0, alert_threshold = 20, image_base64 = '' } = req.body
   if (!cat2_id) return res.status(400).json({ error: '请选择二级类目' })
   const r = db.prepare(
-    'INSERT INTO fabrics(cat2_id, color, unit, current_stock, alert_threshold) VALUES(?,?,?,?,?)'
-  ).run(cat2_id, color, unit, current_stock, alert_threshold)
+    'INSERT INTO fabrics(cat2_id, color, unit, current_stock, alert_threshold, image_base64) VALUES(?,?,?,?,?,?)'
+  ).run(cat2_id, color, unit, current_stock, alert_threshold, image_base64)
   res.json({ id: r.lastInsertRowid })
 })
 
 // 编辑面料
 router.put('/:id', (req, res) => {
-  const { cat2_id, color, unit, current_stock, alert_threshold } = req.body
-  const existing = db.prepare('SELECT id FROM fabrics WHERE id=?').get(req.params.id)
+  const { cat2_id, color, unit, current_stock, alert_threshold, image_base64 } = req.body
+  const existing = db.prepare('SELECT id, image_base64 FROM fabrics WHERE id=?').get(req.params.id)
   if (!existing) return res.status(404).json({ error: '面料不存在' })
+  const imgVal = image_base64 !== undefined ? image_base64 : existing.image_base64
   db.prepare(
-    'UPDATE fabrics SET cat2_id=?,color=?,unit=?,current_stock=?,alert_threshold=? WHERE id=?'
-  ).run(cat2_id, color, unit, current_stock, alert_threshold, req.params.id)
+    'UPDATE fabrics SET cat2_id=?,color=?,unit=?,current_stock=?,alert_threshold=?,image_base64=? WHERE id=?'
+  ).run(cat2_id, color, unit, current_stock, alert_threshold, imgVal, req.params.id)
   res.json({ ok: true })
 })
 

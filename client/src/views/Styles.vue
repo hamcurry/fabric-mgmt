@@ -4,14 +4,24 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <b>{{ $t('styles.list_title') }}</b>
         <el-space wrap>
-          <el-input v-model="searchQ" :placeholder="$t('styles.search_placeholder')" clearable style="width:180px" @keyup.enter="load" />
-          <el-button @click="load" icon="Search">{{ $t('common.search') }}</el-button>
+          <el-input v-model="searchQ" :placeholder="$t('styles.search_placeholder')" clearable style="width:180px" />
           <el-button type="primary" icon="Plus" @click="openDialog()">{{ $t('styles.new_style') }}</el-button>
         </el-space>
       </div>
     </template>
 
-    <el-table class="style-desktop-table" :data="styles" v-loading="loading">
+    <!-- 客户 Tab 过滤 -->
+    <div v-if="customers.length" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <el-button size="small" :type="activeCustomer==='' ? 'primary' : ''" @click="activeCustomer=''">全部</el-button>
+      <el-button
+        v-for="c in customers" :key="c"
+        size="small"
+        :type="activeCustomer===c ? 'primary' : ''"
+        @click="activeCustomer=c"
+      >{{ c }}</el-button>
+    </div>
+
+    <el-table class="style-desktop-table" :data="filteredStyles" v-loading="loading">
       <el-table-column :label="$t('styles.style_image')" width="80">
         <template #default="{ row }">
           <el-tooltip
@@ -74,7 +84,7 @@
 
     <!-- 移动端卡片列表 -->
     <div class="style-mobile-cards" v-loading="loading">
-      <div v-for="row in styles" :key="row.id" class="style-card">
+      <div v-for="row in filteredStyles" :key="row.id" class="style-card">
         <el-image
           v-if="row.image_base64"
           :src="row.image_base64"
@@ -105,7 +115,7 @@
           </template>
         </el-dropdown>
       </div>
-      <div v-if="!styles.length && !loading" style="text-align:center;color:var(--color-text-tertiary);padding:40px">
+      <div v-if="!filteredStyles.length && !loading" style="text-align:center;color:var(--color-text-tertiary);padding:40px">
         {{ $t('styles.no_data') || '暂无款式' }}
       </div>
     </div>
@@ -237,6 +247,21 @@ const pasteActive = ref(false)
 const imageFileInput = ref()
 const cameraInput = ref()
 const searchQ = ref('')
+const activeCustomer = ref('')
+
+const customers = computed(() => {
+  const set = new Set(styles.value.map(s => s.customer || '').filter(Boolean))
+  return Array.from(set).sort()
+})
+
+const filteredStyles = computed(() => {
+  const q = searchQ.value.trim().toLowerCase()
+  return styles.value.filter(s => {
+    if (activeCustomer.value && (s.customer || '') !== activeCustomer.value) return false
+    if (q) return s.name.toLowerCase().includes(q) || (s.customer || '').toLowerCase().includes(q)
+    return true
+  })
+})
 
 const defaultForm = () => ({
   id: null, name: '', customer: '', note: '', image_base64: '', materials: []
@@ -254,9 +279,7 @@ const materialSummary = (m) => {
 
 const load = async () => {
   loading.value = true
-  const params = {}
-  if (searchQ.value) params.q = searchQ.value
-  styles.value = await stylesApi.list(params).finally(() => loading.value = false)
+  styles.value = await stylesApi.list().finally(() => loading.value = false)
 }
 
 const openDialog = async (row = null) => {

@@ -9,98 +9,136 @@
     <div v-loading="loading">
       <div v-if="!tree.length" style="color:var(--color-text-tertiary);padding:40px;text-align:center">{{ $t('fabrics.no_data') }}</div>
 
-      <el-card
-        v-for="cat1 in tree"
-        :key="cat1.id"
-        shadow="never"
-        style="margin-bottom:12px"
-      >
-        <template #header>
-          <div style="display:flex;align-items:center;gap:8px">
-            <el-tag type="primary" size="large" style="font-size:14px;font-weight:600">{{ cat1.name }}</el-tag>
-            <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('fabrics.fabric_count', { n: countFabrics(cat1) }) }}</span>
-          </div>
-        </template>
+      <template v-else>
+        <!-- 一级类目 Tab -->
+        <el-tabs v-model="activeCat1Id" type="card" style="margin-bottom:12px" @tab-change="activeCat2Id = null">
+          <el-tab-pane v-for="cat1 in tree" :key="cat1.id" :name="cat1.id" :label="cat1.name" />
+        </el-tabs>
 
-        <div
-          v-for="cat2 in cat1.children"
-          :key="cat2.id"
-          style="margin-bottom:16px"
-        >
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <el-tag type="info" size="small">{{ cat2.name }}</el-tag>
+        <template v-if="activeCat1Node">
+          <!-- 二级类目过滤按钮 -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center">
+            <el-button
+              size="small"
+              :type="activeCat2Id === null ? 'primary' : ''"
+              @click="activeCat2Id = null"
+            >全部</el-button>
+            <el-button
+              v-for="cat2 in activeCat1Node.children"
+              :key="cat2.id"
+              size="small"
+              :type="activeCat2Id === cat2.id ? 'primary' : ''"
+              @click="activeCat2Id = cat2.id"
+            >{{ cat2.name }}</el-button>
             <el-button
               size="small" icon="Plus" link
-              @click="openFabricDialog({ cat1_id: cat1.id, cat2_id: cat2.id })"
+              @click="openFabricDialog({ cat1_id: activeCat1Node.id })"
             >{{ $t('fabrics.add_color') }}</el-button>
           </div>
 
-          <el-table class="fabric-desktop-table" :data="cat2.fabrics" size="small" border style="margin-left:16px">
-            <el-table-column prop="color" :label="$t('common.color')" min-width="100">
-              <template #default="{ row }">
-                <span v-if="row.color">{{ row.color }}</span>
-                <span v-else style="color:var(--color-text-tertiary)">{{ $t('fabrics.unspecified_color') }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column :label="$t('fabrics.current_stock')" width="130">
-              <template #default="{ row }">
-                <el-tag :type="row.is_alert ? 'danger' : 'success'">
-                  {{ row.current_stock }} {{ row.unit }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column :label="$t('fabrics.alert_threshold')" width="110">
-              <template #default="{ row }">{{ row.alert_threshold }} {{ row.unit }}</template>
-            </el-table-column>
-            <el-table-column prop="unit" :label="$t('common.unit')" width="70" />
-            <el-table-column prop="created_at" :label="$t('common.created_at')" width="155" />
-            <el-table-column :label="$t('common.operation')" width="140" fixed="right">
-              <template #default="{ row }">
-                <el-button size="small" @click="openFabricDialog(row, cat1.id, cat2.id)">{{ $t('common.edit') }}</el-button>
-                <el-popconfirm :title="$t('fabrics.confirm_delete_fabric')" @confirm="removeFabric(row.id)">
-                  <template #reference>
-                    <el-button size="small" type="danger">{{ $t('common.delete') }}</el-button>
-                  </template>
-                </el-popconfirm>
-              </template>
-            </el-table-column>
-          </el-table>
+          <!-- 面料列表 -->
+          <div v-for="cat2 in visibleCat2" :key="cat2.id" style="margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <el-tag type="info" size="small">{{ cat2.name }}</el-tag>
+              <el-button
+                size="small" icon="Plus" link
+                @click="openFabricDialog({ cat1_id: activeCat1Node.id, cat2_id: cat2.id })"
+              >{{ $t('fabrics.add_color') }}</el-button>
+            </div>
 
-          <!-- 移动端卡片 -->
-          <div class="fabric-mobile-cards">
-            <div v-for="row in cat2.fabrics" :key="row.id" class="fabric-card">
-              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
-                <el-tag :type="row.is_alert ? 'danger' : 'success'" style="flex-shrink:0">
-                  {{ row.current_stock }} {{ row.unit }}
-                </el-tag>
-                <span style="font-size:14px;font-weight:500">
-                  {{ row.color || $t('fabrics.unspecified_color') }}
-                </span>
-                <span style="font-size:12px;color:var(--color-text-tertiary);margin-left:auto;flex-shrink:0">
-                  预警 {{ row.alert_threshold }}{{ row.unit }}
-                </span>
-              </div>
-              <el-dropdown trigger="click" size="small">
-                <el-button size="small" circle icon="MoreFilled" />
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="openFabricDialog(row, cat1.id, cat2.id)">{{ $t('common.edit') }}</el-dropdown-item>
-                    <el-dropdown-item class="danger-item" @click="confirmRemoveFabric(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
-                  </el-dropdown-menu>
+            <el-table class="fabric-desktop-table" :data="cat2.fabrics" size="small" border style="margin-left:16px">
+              <el-table-column width="56">
+                <template #default="{ row }">
+                  <el-image
+                    v-if="row.image_base64"
+                    :src="row.image_base64"
+                    fit="cover"
+                    style="width:36px;height:36px;border-radius:4px;display:block;cursor:zoom-in"
+                    :preview-src-list="[row.image_base64]"
+                    preview-teleported
+                  />
+                  <div v-else style="width:36px;height:36px;border-radius:4px;background:var(--color-bg-subtle);display:flex;align-items:center;justify-content:center">
+                    <el-icon style="color:#ccc"><Picture /></el-icon>
+                  </div>
                 </template>
-              </el-dropdown>
+              </el-table-column>
+              <el-table-column prop="color" :label="$t('common.color')" min-width="100">
+                <template #default="{ row }">
+                  <span v-if="row.color">{{ row.color }}</span>
+                  <span v-else style="color:var(--color-text-tertiary)">{{ $t('fabrics.unspecified_color') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column :label="$t('fabrics.current_stock')" width="130">
+                <template #default="{ row }">
+                  <el-tag :type="row.is_alert ? 'danger' : 'success'">
+                    {{ row.current_stock }} {{ row.unit }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column :label="$t('fabrics.alert_threshold')" width="110">
+                <template #default="{ row }">{{ row.alert_threshold }} {{ row.unit }}</template>
+              </el-table-column>
+              <el-table-column prop="unit" :label="$t('common.unit')" width="70" />
+              <el-table-column prop="created_at" :label="$t('common.created_at')" width="155" />
+              <el-table-column :label="$t('common.operation')" width="140" fixed="right">
+                <template #default="{ row }">
+                  <el-button size="small" @click="openFabricDialog(row, activeCat1Node.id, cat2.id)">{{ $t('common.edit') }}</el-button>
+                  <el-popconfirm :title="$t('fabrics.confirm_delete_fabric')" @confirm="removeFabric(row.id)">
+                    <template #reference>
+                      <el-button size="small" type="danger">{{ $t('common.delete') }}</el-button>
+                    </template>
+                  </el-popconfirm>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <!-- 移动端卡片 -->
+            <div class="fabric-mobile-cards">
+              <div v-for="row in cat2.fabrics" :key="row.id" class="fabric-card">
+                <el-image
+                  v-if="row.image_base64"
+                  :src="row.image_base64"
+                  fit="cover"
+                  class="fabric-thumb"
+                  :preview-src-list="[row.image_base64]"
+                  preview-teleported
+                />
+                <div v-else class="fabric-thumb fabric-thumb-empty">
+                  <el-icon style="color:#ddd"><Picture /></el-icon>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+                  <el-tag :type="row.is_alert ? 'danger' : 'success'" style="flex-shrink:0">
+                    {{ row.current_stock }} {{ row.unit }}
+                  </el-tag>
+                  <span style="font-size:14px;font-weight:500">
+                    {{ row.color || $t('fabrics.unspecified_color') }}
+                  </span>
+                  <span style="font-size:12px;color:var(--color-text-tertiary);margin-left:auto;flex-shrink:0">
+                    预警 {{ row.alert_threshold }}{{ row.unit }}
+                  </span>
+                </div>
+                <el-dropdown trigger="click" size="small">
+                  <el-button size="small" circle icon="MoreFilled" />
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item @click="openFabricDialog(row, activeCat1Node.id, cat2.id)">{{ $t('common.edit') }}</el-dropdown-item>
+                      <el-dropdown-item class="danger-item" @click="confirmRemoveFabric(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div v-if="!cat1.children.length" style="color:var(--color-text-tertiary);font-size:13px;padding:8px 0">
-          {{ $t('fabrics.no_sub_cats') }}
-        </div>
-      </el-card>
+          <div v-if="!activeCat1Node.children.length" style="color:var(--color-text-tertiary);font-size:13px;padding:8px 0">
+            {{ $t('fabrics.no_sub_cats') }}
+          </div>
+        </template>
+      </template>
     </div>
 
     <!-- 新增/编辑面料弹窗 -->
-    <el-dialog v-model="fabricDialogVisible" :title="fabricForm.id ? $t('fabrics.edit_fabric') : $t('fabrics.new_fabric')" width="440px">
+    <el-dialog v-model="fabricDialogVisible" :title="fabricForm.id ? $t('fabrics.edit_fabric') : $t('fabrics.new_fabric')" width="min(480px,96vw)">
       <el-form :model="fabricForm" :rules="fabricRules" ref="fabricFormRef" label-width="100px">
         <el-form-item :label="$t('fabrics.cat1')" prop="cat1_id">
           <el-select v-model="fabricForm.cat1_id" :placeholder="$t('fabrics.select_cat1')" style="width:100%" @change="onCat1Change">
@@ -135,6 +173,41 @@
         <el-form-item :label="$t('fabrics.alert_threshold')">
           <el-input-number v-model="fabricForm.alert_threshold" :min="0" :precision="2" style="width:100%" />
         </el-form-item>
+
+        <!-- 面料图片 -->
+        <el-form-item label="面料图片">
+          <input ref="fabricImageInput" type="file" accept="image/*" style="display:none" @change="handleFabricImage" />
+          <input ref="fabricCameraInput" type="file" accept="image/*" capture="environment" style="display:none" @change="handleFabricImage" />
+          <div style="width:100%">
+            <div
+              ref="fabricPasteZone"
+              tabindex="0"
+              class="paste-zone"
+              :class="{ active: pasteActive }"
+              @click="fabricPasteZone.focus()"
+              @focus="pasteActive=true"
+              @blur="pasteActive=false"
+              @paste="handleFabricPaste"
+            >
+              <div v-if="!fabricForm.image_base64" style="text-align:center;color:var(--color-text-tertiary);padding:8px 0">
+                <el-icon style="font-size:22px"><Picture /></el-icon>
+                <div style="font-size:12px;margin-top:4px">点击后可粘贴截图</div>
+              </div>
+              <div v-else style="position:relative;display:inline-block">
+                <img :src="fabricForm.image_base64" style="max-height:120px;max-width:100%;border-radius:4px" />
+                <el-button
+                  size="small" type="danger" circle icon="Close"
+                  style="position:absolute;top:-8px;right:-8px"
+                  @click.stop="fabricForm.image_base64=''"
+                />
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <el-button size="small" icon="Camera" @click="fabricCameraInput.click()">拍照</el-button>
+              <el-button size="small" icon="Picture" @click="fabricImageInput.click()">从相册选择</el-button>
+            </div>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="fabricDialogVisible = false">{{ $t('common.cancel') }}</el-button>
@@ -143,7 +216,7 @@
     </el-dialog>
 
     <!-- 类目管理弹窗 -->
-    <el-dialog v-model="catDialogVisible" :title="$t('fabrics.manage_cats_title')" width="560px">
+    <el-dialog v-model="catDialogVisible" :title="$t('fabrics.manage_cats_title')" width="min(560px,96vw)">
       <div style="display:flex;gap:16px">
         <div style="flex:1;border-right:1px solid #f0f0f0;padding-right:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -191,6 +264,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Picture } from '@element-plus/icons-vue'
 import { fabricsApi, categoriesApi } from '../api'
 
 const { t } = useI18n()
@@ -203,9 +277,16 @@ const fabricDialogVisible = ref(false)
 const catDialogVisible = ref(false)
 const fabricFormRef = ref()
 const selectedCat1Id = ref(null)
+const activeCat1Id = ref(null)
+const activeCat2Id = ref(null)
+const pasteActive = ref(false)
+const fabricImageInput = ref()
+const fabricCameraInput = ref()
+const fabricPasteZone = ref()
 
 const defaultFabricForm = () => ({
-  id: null, cat1_id: null, cat2_id: null, color: '', unit: '米', current_stock: 0, alert_threshold: 20
+  id: null, cat1_id: null, cat2_id: null, color: '', unit: '米',
+  current_stock: 0, alert_threshold: 20, image_base64: ''
 })
 const fabricForm = ref(defaultFabricForm())
 const fabricRules = computed(() => ({
@@ -225,18 +306,67 @@ const filteredCatTree2 = computed(() =>
     : []
 )
 
+const activeCat1Node = computed(() =>
+  tree.value.find(c => c.id === activeCat1Id.value) || null
+)
+
+const visibleCat2 = computed(() => {
+  if (!activeCat1Node.value) return []
+  if (activeCat2Id.value === null) return activeCat1Node.value.children
+  return activeCat1Node.value.children.filter(c => c.id === activeCat2Id.value)
+})
+
 const getCat1Name = (id) => catTree.value.find(c => c.id === id)?.name || ''
-const countFabrics = (cat1) => cat1.children.reduce((s, c2) => s + c2.fabrics.length, 0)
 
 const loadTree = async () => {
   loading.value = true
   tree.value = await fabricsApi.tree().finally(() => loading.value = false)
+  if (!activeCat1Id.value && tree.value.length) {
+    activeCat1Id.value = tree.value[0].id
+  }
 }
 const loadCatTree = async () => {
   catTree.value = await categoriesApi.tree()
 }
 
 const onCat1Change = () => { fabricForm.value.cat2_id = null }
+
+const handleFabricImage = (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    const img = new Image()
+    img.onload = () => {
+      const MAX = 1200
+      let w = img.naturalWidth, h = img.naturalHeight
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+        else { w = Math.round(w * MAX / h); h = MAX }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      fabricForm.value.image_base64 = canvas.toDataURL('image/jpeg', 0.82)
+    }
+    img.src = ev.target.result
+  }
+  reader.readAsDataURL(file)
+  e.target.value = ''
+}
+
+const handleFabricPaste = (e) => {
+  const items = e.clipboardData?.items || []
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const blob = item.getAsFile()
+      const reader = new FileReader()
+      reader.onload = (ev) => { fabricForm.value.image_base64 = ev.target.result }
+      reader.readAsDataURL(blob)
+      break
+    }
+  }
+}
 
 const openFabricDialog = (row = null, cat1_id = null, cat2_id = null) => {
   if (row?.id) {
@@ -247,13 +377,14 @@ const openFabricDialog = (row = null, cat1_id = null, cat2_id = null) => {
       color: row.color,
       unit: row.unit,
       current_stock: row.current_stock,
-      alert_threshold: row.alert_threshold
+      alert_threshold: row.alert_threshold,
+      image_base64: row.image_base64 || ''
     }
   } else {
     fabricForm.value = {
       ...defaultFabricForm(),
-      cat1_id: row?.cat1_id || null,
-      cat2_id: row?.cat2_id || null
+      cat1_id: row?.cat1_id || cat1_id || null,
+      cat2_id: row?.cat2_id || cat2_id || null
     }
   }
   fabricDialogVisible.value = true
@@ -268,7 +399,8 @@ const saveFabric = async () => {
       color: fabricForm.value.color,
       unit: fabricForm.value.unit,
       current_stock: fabricForm.value.current_stock,
-      alert_threshold: fabricForm.value.alert_threshold
+      alert_threshold: fabricForm.value.alert_threshold,
+      image_base64: fabricForm.value.image_base64
     }
     if (fabricForm.value.id) {
       await fabricsApi.update(fabricForm.value.id, payload)
@@ -377,6 +509,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.paste-zone {
+  width: 100%;
+  border: 2px dashed var(--color-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color .15s;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.paste-zone.active { border-color: var(--color-primary); }
+
 .fabric-mobile-cards { display: none; flex-direction: column; gap: 8px; margin-left: 16px; margin-top: 4px; }
 .fabric-card {
   display: flex;
@@ -386,6 +533,19 @@ onMounted(() => {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-bg-surface);
+}
+.fabric-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.fabric-thumb-empty {
+  background: var(--color-bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 :deep(.danger-item) { color: var(--el-color-danger) !important; }
 @media (max-width: 640px) {
