@@ -36,7 +36,5 @@ function withParsedImagesList(logs = []) {
 module.exports = {
   sanitizeImages,
   serializeImages,
-  parseImages,
-  withParsedImages,
   withParsedImagesList
 }
