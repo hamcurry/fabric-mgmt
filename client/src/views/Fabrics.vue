@@ -49,14 +49,25 @@
             <el-table class="fabric-desktop-table" :data="cat2.fabrics" size="small" border style="margin-left:16px">
               <el-table-column width="56">
                 <template #default="{ row }">
-                  <el-image
+                  <el-tooltip
                     v-if="row.image_base64"
-                    :src="row.image_base64"
-                    fit="cover"
-                    style="width:36px;height:36px;border-radius:4px;display:block;cursor:zoom-in"
-                    :preview-src-list="[row.image_base64]"
-                    preview-teleported
-                  />
+                    effect="light"
+                    placement="right"
+                    :show-after="300"
+                    :hide-after="0"
+                    popper-class="img-hover-popper"
+                  >
+                    <template #content>
+                      <img :src="row.image_base64" style="max-width:300px;max-height:300px;object-fit:contain;display:block" />
+                    </template>
+                    <el-image
+                      :src="row.image_base64"
+                      fit="cover"
+                      style="width:36px;height:36px;border-radius:4px;display:block;cursor:zoom-in"
+                      :preview-src-list="[row.image_base64]"
+                      preview-teleported
+                    />
+                  </el-tooltip>
                   <div v-else style="width:36px;height:36px;border-radius:4px;background:var(--color-bg-subtle);display:flex;align-items:center;justify-content:center">
                     <el-icon style="color:#ccc"><Picture /></el-icon>
                   </div>
@@ -95,14 +106,26 @@
             <!-- 移动端卡片 -->
             <div class="fabric-mobile-cards">
               <div v-for="row in cat2.fabrics" :key="row.id" class="fabric-card">
-                <el-image
+                <el-tooltip
                   v-if="row.image_base64"
-                  :src="row.image_base64"
-                  fit="cover"
-                  class="fabric-thumb"
-                  :preview-src-list="[row.image_base64]"
-                  preview-teleported
-                />
+                  effect="light"
+                  placement="right"
+                  :show-after="300"
+                  :hide-after="0"
+                  popper-class="img-hover-popper"
+                >
+                  <template #content>
+                    <img :src="row.image_base64" style="max-width:280px;max-height:280px;object-fit:contain;display:block" />
+                  </template>
+                  <el-image
+                    :src="row.image_base64"
+                    fit="cover"
+                    class="fabric-thumb"
+                    style="cursor:zoom-in"
+                    :preview-src-list="[row.image_base64]"
+                    preview-teleported
+                  />
+                </el-tooltip>
                 <div v-else class="fabric-thumb fabric-thumb-empty">
                   <el-icon style="color:#ddd"><Picture /></el-icon>
                 </div>
@@ -509,6 +532,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:deep(.img-hover-popper) { padding: 4px; }
+
 .paste-zone {
   width: 100%;
   border: 2px dashed var(--color-border);
