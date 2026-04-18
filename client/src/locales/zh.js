@@ -90,7 +90,8 @@ export default {
     paste_placeholder: '点击此处后 Ctrl+V 粘贴截图',
     add_material: '添加面料',
     confirm_delete: '确认删除该款式？',
-    val_name: '请输入款式名称'
+    val_name: '请输入款式名称',
+    no_data: '暂无款式'
   },
   style_detail: {
     production_records: '生产记录',

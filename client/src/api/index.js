@@ -34,7 +34,6 @@ export const stylesApi = {
   create: (data) => http.post('/styles', data),
   update: (id, data) => http.put(`/styles/${id}`, data),
   appendEstimates: (id, data) => http.post(`/styles/${id}/append-estimates`, data),
-  recalcUsage: (id) => http.post(`/styles/${id}/recalculate-usage`),
   remove: (id) => http.delete(`/styles/${id}`),
   timeline: (id) => http.get(`/styles/${id}/timeline`)
 }

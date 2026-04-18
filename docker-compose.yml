@@ -39,6 +39,3 @@ services:
 networks:
   fabric-net:
     driver: bridge
-
-volumes:
-  fabric-data:

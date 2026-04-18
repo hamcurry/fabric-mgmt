@@ -31,6 +31,7 @@ db.exec(`
     unit            TEXT    DEFAULT '米',
     current_stock   REAL    DEFAULT 0,
     alert_threshold REAL    DEFAULT 20,
+    image_base64    TEXT    DEFAULT '',
     created_at      TEXT    DEFAULT (datetime('now','localtime'))
   );
 

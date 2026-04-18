@@ -90,7 +90,8 @@ export default {
     paste_placeholder: 'Click here then Ctrl+V to paste screenshot',
     add_material: 'Add Fabric',
     confirm_delete: 'Delete this style?',
-    val_name: 'Style name is required'
+    val_name: 'Style name is required',
+    no_data: 'No styles found'
   },
   style_detail: {
     production_records: 'Production Records',

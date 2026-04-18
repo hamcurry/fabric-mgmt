@@ -192,6 +192,5 @@ module.exports = {
   normalizeMaterialInput,
   upsertStyleMaterials,
   appendStyleMaterials,
-  recalculateStyleEstimatedLogs,
-  buildEffectiveMaterial
+  recalculateStyleEstimatedLogs
 }
