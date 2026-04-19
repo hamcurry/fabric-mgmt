@@ -5,7 +5,7 @@
         <b>{{ $t('styles.list_title') }}</b>
         <el-space wrap>
           <el-input v-model="searchQ" :placeholder="$t('styles.search_placeholder')" clearable style="width:180px" />
-          <el-button type="primary" icon="Plus" @click="openDialog()">{{ $t('styles.new_style') }}</el-button>
+          <el-button v-if="auth.canWrite.value" type="primary" icon="Plus" @click="openDialog()">{{ $t('styles.new_style') }}</el-button>
         </el-space>
       </div>
     </template>
@@ -76,8 +76,8 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="$router.push(`/styles/${row.id}`)">{{ $t('common.detail') }}</el-dropdown-item>
-                <el-dropdown-item @click="openDialog(row)">{{ $t('common.edit') }}</el-dropdown-item>
-                <el-dropdown-item class="danger-item" @click="confirmRemove(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
+                <el-dropdown-item v-if="auth.canWrite.value" @click="openDialog(row)">{{ $t('common.edit') }}</el-dropdown-item>
+                <el-dropdown-item v-if="auth.canWrite.value" class="danger-item" @click="confirmRemove(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -112,8 +112,8 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item @click="$router.push(`/styles/${row.id}`)">{{ $t('common.detail') }}</el-dropdown-item>
-              <el-dropdown-item @click="openDialog(row)">{{ $t('common.edit') }}</el-dropdown-item>
-              <el-dropdown-item class="danger-item" @click="confirmRemove(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
+              <el-dropdown-item v-if="auth.canWrite.value" @click="openDialog(row)">{{ $t('common.edit') }}</el-dropdown-item>
+              <el-dropdown-item v-if="auth.canWrite.value" class="danger-item" @click="confirmRemove(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -236,6 +236,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { stylesApi, categoriesApi } from '../api'
+import { auth } from '../stores/auth'
 
 const { t } = useI18n()
 

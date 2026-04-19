@@ -2,12 +2,14 @@ const express = require('express')
 const router = express.Router()
 const db = require('../db')
 const { withParsedImagesList } = require('../log-utils')
+const { resolveWorkspace } = require('../middleware/auth')
 
 // 全局时间线（入库 + 出库，混合排序）
 router.get('/', (req, res) => {
   const { type, fabric_id, style_id, date_from, date_to } = req.query
-  let sql = 'SELECT * FROM stock_logs WHERE 1=1'
-  const params = []
+  const wsId = resolveWorkspace(req)
+  let sql = 'SELECT * FROM stock_logs WHERE workspace_id=?'
+  const params = [wsId]
   if (type) { sql += ' AND type=?'; params.push(type) }
   if (fabric_id) { sql += ' AND fabric_id=?'; params.push(fabric_id) }
   if (style_id) { sql += ' AND style_id=?'; params.push(style_id) }

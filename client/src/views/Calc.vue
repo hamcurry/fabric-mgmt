@@ -105,7 +105,7 @@
       <el-divider />
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('calc.total_items', { n: allItems.length }) }}</span>
-        <el-button type="warning" @click="showDialog = true">{{ $t('calc.quick_out') }}</el-button>
+        <el-button v-if="auth.canWrite.value" type="warning" @click="showDialog = true">{{ $t('calc.quick_out') }}</el-button>
       </div>
     </div>
 
@@ -124,7 +124,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="deducting" @click="deduct">{{ $t('calc.confirm_out_btn') }}</el-button>
+        <el-button v-if="auth.canWrite.value" type="primary" :loading="deducting" @click="deduct">{{ $t('calc.confirm_out_btn') }}</el-button>
       </template>
     </el-dialog>
   </el-card>
@@ -134,6 +134,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import { auth } from '../stores/auth'
 import { stylesApi, fabricsApi, stockApi } from '../api'
 
 const { t } = useI18n()

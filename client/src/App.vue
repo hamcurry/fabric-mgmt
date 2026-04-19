@@ -19,6 +19,9 @@
           </div>
         </div>
 
+        <!-- Workspace Switcher -->
+        <WorkspaceSwitcher />
+
         <!-- Nav -->
         <nav class="nav">
           <router-link to="/dashboard" class="nav-item" :class="{ active: $route.path === '/dashboard' }" @click="closeSidebar">
@@ -95,10 +98,41 @@
             </svg>
             <span>{{ $t('nav.backup') }}</span>
           </router-link>
+
+          <template v-if="auth.isAdmin.value">
+            <div class="nav-divider"></div>
+            <router-link to="/admin" class="nav-item" :class="{ active: $route.path === '/admin' }" @click="closeSidebar">
+              <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/>
+              </svg>
+              <span>管理后台</span>
+            </router-link>
+          </template>
         </nav>
 
         <!-- Sidebar Footer -->
         <div class="sidebar-footer">
+          <!-- 用户信息 / 登出 -->
+          <div v-if="auth.isLoggedIn.value" class="user-info-row">
+            <span class="user-name">{{ auth.state.user.username }}</span>
+            <el-tag size="small" :type="auth.isAdmin.value ? 'danger' : 'info'" style="margin-left:6px">
+              {{ auth.isAdmin.value ? '管理员' : '普通' }}
+            </el-tag>
+            <button class="theme-btn logout-btn" @click="pwdDialogVisible = true" title="修改密码" style="margin-left:auto;padding:4px 6px">
+              <svg class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+            <button class="theme-btn logout-btn" @click="handleLogout" title="退出登录" style="padding:4px 6px">
+              <svg class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+          </div>
+          <div v-else class="guest-row">
+            <span class="guest-label">访客模式</span>
+            <router-link to="/login" class="login-link" @click="closeSidebar">登录</router-link>
+          </div>
           <button class="theme-btn" @click="toggleLang" :title="$t('app.lang.' + (locale === 'zh' ? 'en' : 'zh'))">
             <svg class="theme-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M7 2a1 1 0 011 1v1h3a1 1 0 110 2H9.578a18.87 18.87 0 01-1.724 4.78c.29.354.596.696.914 1.026a1 1 0 11-1.44 1.389 21.034 21.034 0 01-.554-.6 19.098 19.098 0 01-3.107 3.567 1 1 0 01-1.334-1.49 17.087 17.087 0 003.13-3.733 18.992 18.992 0 01-1.487-2.494 1 1 0 111.79-.89c.234.47.489.928.764 1.372.417-.934.752-1.913.997-2.927H3a1 1 0 110-2h3V3a1 1 0 011-1zm6 6a1 1 0 01.894.553l2.991 5.992a.869.869 0 01.02.037l.99 1.98a1 1 0 11-1.79.895L15.383 16h-4.764l-.724 1.447a1 1 0 11-1.788-.894l.99-1.98.019-.038 2.99-5.99A1 1 0 0113 8zm-1.382 6h2.764L13 11.236 11.618 14z" clip-rule="evenodd"/>
@@ -130,7 +164,7 @@
           <div class="topbar-breadcrumb">{{ $route.meta.descKey ? $t($route.meta.descKey) : '' }}</div>
         </header>
         <main class="content">
-          <router-view />
+          <router-view :key="auth.state.currentWorkspaceId" />
         </main>
       </div>
     </div>
@@ -191,18 +225,41 @@
         </div>
       </div>
     </transition>
+    <!-- 修改密码 Dialog -->
+    <el-dialog v-model="pwdDialogVisible" title="修改密码" width="360px" :close-on-click-modal="false">
+      <el-form label-width="80px">
+        <el-form-item label="当前密码">
+          <el-input v-model="pwdForm.old_password" type="password" show-password placeholder="请输入当前密码" />
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input v-model="pwdForm.new_password" type="password" show-password placeholder="至少4位" />
+        </el-form-item>
+        <el-form-item label="确认新密码">
+          <el-input v-model="pwdForm.confirm" type="password" show-password placeholder="再次输入新密码" @keyup.enter="savePwd" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="pwdSaving" @click="savePwd">保存</el-button>
+      </template>
+    </el-dialog>
   </el-config-provider>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
+import WorkspaceSwitcher from './components/WorkspaceSwitcher.vue'
+import { auth } from './stores/auth'
+import { authApi } from './api/index'
+import { ElMessage } from 'element-plus'
 
 const { locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 
 const epLocale = computed(() => locale.value === 'zh' ? zhCn : en)
 
@@ -225,6 +282,38 @@ const toggleTheme = () => {
 const toggleLang = () => {
   locale.value = locale.value === 'zh' ? 'en' : 'zh'
   localStorage.setItem('lang', locale.value)
+}
+
+function handleLogout() {
+  auth.logout()
+  localStorage.removeItem('guest_acknowledged')
+  router.push('/login')
+}
+
+const pwdDialogVisible = ref(false)
+const pwdForm = ref({ old_password: '', new_password: '', confirm: '' })
+const pwdSaving = ref(false)
+
+async function savePwd() {
+  if (!pwdForm.value.old_password || !pwdForm.value.new_password) {
+    ElMessage.warning('请填写所有密码字段')
+    return
+  }
+  if (pwdForm.value.new_password !== pwdForm.value.confirm) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+  pwdSaving.value = true
+  try {
+    await authApi.changePassword({ old_password: pwdForm.value.old_password, new_password: pwdForm.value.new_password })
+    ElMessage.success('密码已更新')
+    pwdDialogVisible.value = false
+    pwdForm.value = { old_password: '', new_password: '', confirm: '' }
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    pwdSaving.value = false
+  }
 }
 
 onMounted(() => {
@@ -400,6 +489,44 @@ onMounted(() => {
   background: var(--color-sidebar-hover);
   color: rgba(255,255,255,0.8);
 }
+.user-info-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 90px;
+}
+.logout-btn {
+  flex-shrink: 0;
+  width: auto;
+  padding: 4px 6px !important;
+}
+.guest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+}
+.guest-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+}
+.login-link {
+  font-size: 12px;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.login-link:hover { text-decoration: underline; }
 .theme-icon {
   width: 15px;
   height: 15px;

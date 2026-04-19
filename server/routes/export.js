@@ -2,12 +2,14 @@ const express = require('express')
 const router = express.Router()
 const db = require('../db')
 const ExcelJS = require('exceljs')
+const { resolveWorkspace } = require('../middleware/auth')
 
 // 导出出入库流水 Excel
 router.get('/xlsx', async (req, res) => {
   const { type, fabric_id, style_id, date_from, date_to } = req.query
-  let sql = 'SELECT * FROM stock_logs WHERE 1=1'
-  const params = []
+  const wsId = resolveWorkspace(req)
+  let sql = 'SELECT * FROM stock_logs WHERE workspace_id=?'
+  const params = [wsId]
   if (type) { sql += ' AND type=?'; params.push(type) }
   if (fabric_id) { sql += ' AND fabric_id=?'; params.push(fabric_id) }
   if (style_id) { sql += ' AND style_id=?'; params.push(style_id) }
@@ -27,14 +29,12 @@ router.get('/xlsx', async (req, res) => {
     { header: 'PO 号', key: 'po_number', width: 18 },
     { header: '备注', key: 'note', width: 24 }
   ]
-  // 表头加粗
   ws.getRow(1).font = { bold: true }
 
   for (const log of logs) {
     ws.addRow({ ...log, type: log.type === 'in' ? '入库' : '出库' })
   }
 
-  // 库存汇总 sheet
   const ws2 = wb.addWorksheet('库存汇总')
   ws2.columns = [
     { header: '面料名称', key: 'name', width: 16 },
@@ -52,8 +52,9 @@ router.get('/xlsx', async (req, res) => {
     FROM fabrics f
     JOIN fabric_cat2 c2 ON c2.id = f.cat2_id
     JOIN fabric_cat1 c1 ON c1.id = c2.cat1_id
+    WHERE f.workspace_id=?
     ORDER BY c1.sort, c1.id, c2.sort, c2.id, f.color
-  `).all()
+  `).all(wsId)
   for (const f of fabrics) {
     ws2.addRow({ ...f, is_alert: f.is_alert ? '⚠️ 预警' : '正常' })
   }

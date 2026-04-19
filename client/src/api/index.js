@@ -2,6 +2,23 @@ import axios from 'axios'
 
 const http = axios.create({ baseURL: '/api' })
 
+// 请求拦截器：注入 JWT token 和 workspace_id
+http.interceptors.request.use(config => {
+  const token = localStorage.getItem('token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+
+  const isAuthRoute = config.url.startsWith('/auth') || config.url.startsWith('/admin')
+  if (!isAuthRoute) {
+    const wsId = parseInt(localStorage.getItem('workspace_id')) || 1
+    if (config.method === 'get') {
+      config.params = { workspace_id: wsId, ...config.params }
+    } else if (config.data && !(config.data instanceof FormData)) {
+      config.data = { workspace_id: wsId, ...config.data }
+    }
+  }
+  return config
+})
+
 http.interceptors.response.use(
   res => res.data,
   err => {
@@ -59,12 +76,14 @@ export const reportsApi = {
 }
 
 export const exportUrl = (params) => {
-  const qs = new URLSearchParams(params).toString()
+  const wsId = parseInt(localStorage.getItem('workspace_id')) || 1
+  const merged = { workspace_id: wsId, ...params }
+  const qs = new URLSearchParams(merged).toString()
   return `/api/export/xlsx${qs ? '?' + qs : ''}`
 }
 
 export const ocrApi = {
-  stockIn:  (files) => {
+  stockIn: (files) => {
     const fd = new FormData()
     ;(Array.isArray(files) ? files : [files]).filter(Boolean).forEach(file => fd.append('files', file))
     return http.post('/ocr/stock-in', fd)
@@ -81,4 +100,21 @@ export const aiSettingsApi = {
   get:     ()     => http.get('/ai-settings'),
   save:    (data) => http.post('/ai-settings', data),
   test:    ()     => http.post('/ai-settings/test')
+}
+
+export const authApi = {
+  login:          (data) => http.post('/auth/login', data),
+  me:             ()     => http.get('/auth/me'),
+  changePassword: (data) => http.put('/auth/password', data)
+}
+
+export const adminApi = {
+  listWorkspaces:  ()         => http.get('/admin/workspaces'),
+  createWorkspace: (data)     => http.post('/admin/workspaces', data),
+  updateWorkspace: (id, data) => http.put(`/admin/workspaces/${id}`, data),
+  deleteWorkspace: (id)       => http.delete(`/admin/workspaces/${id}`),
+  listUsers:       ()         => http.get('/admin/users'),
+  createUser:      (data)     => http.post('/admin/users', data),
+  updateUser:      (id, data) => http.put(`/admin/users/${id}`, data),
+  deleteUser:      (id)       => http.delete(`/admin/users/${id}`)
 }

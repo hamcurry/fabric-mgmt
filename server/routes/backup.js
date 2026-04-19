@@ -3,6 +3,7 @@ const router = express.Router()
 const path = require('path')
 const fs = require('fs')
 const db = require('../db')
+const { requireAdmin } = require('../middleware/auth')
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../fabric.db')
 
@@ -17,7 +18,7 @@ router.get('/download', (req, res) => {
 })
 
 // Restore database from uploaded file
-router.post('/restore', express.raw({ type: 'application/octet-stream', limit: '200mb' }), (req, res) => {
+router.post('/restore', requireAdmin, express.raw({ type: 'application/octet-stream', limit: '200mb' }), (req, res) => {
   if (!Buffer.isBuffer(req.body) || req.body.length < 100) {
     return res.status(400).json({ error: 'Invalid file' })
   }

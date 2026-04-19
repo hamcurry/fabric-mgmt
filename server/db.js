@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3')
 const path = require('path')
+const bcrypt = require('bcryptjs')
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'fabric.db')
 const db = new Database(DB_PATH)
@@ -99,5 +100,45 @@ try { db.exec("ALTER TABLE fabrics ADD COLUMN image_base64 TEXT DEFAULT ''") } c
 const presets = ['面布', '里布', '衬布', '蕾丝', '花边', '辅料']
 const insertCat1 = db.prepare('INSERT OR IGNORE INTO fabric_cat1(name, sort) VALUES(?, ?)')
 presets.forEach((name, i) => insertCat1.run(name, i))
+
+// ── 认证与多仓库表 ──
+db.exec(`
+  CREATE TABLE IF NOT EXISTS workspaces (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT    NOT NULL UNIQUE,
+    note       TEXT    DEFAULT '',
+    created_at TEXT    DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT    NOT NULL UNIQUE,
+    password_hash TEXT    NOT NULL,
+    role          TEXT    NOT NULL DEFAULT 'user' CHECK(role IN ('admin','user')),
+    created_at    TEXT    DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS user_workspaces (
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, workspace_id)
+  );
+`)
+
+// 现有业务表加 workspace_id（幂等，现有数据自动获得 DEFAULT 1）
+try { db.exec("ALTER TABLE fabric_cat1  ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
+try { db.exec("ALTER TABLE fabric_cat2  ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
+try { db.exec("ALTER TABLE fabrics      ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
+try { db.exec("ALTER TABLE styles       ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
+try { db.exec("ALTER TABLE stock_logs   ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
+try { db.exec("ALTER TABLE calc_records ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
+
+// 种子：默认仓库 + 初始 admin 账号（admin / admin123）
+db.prepare("INSERT OR IGNORE INTO workspaces(id, name) VALUES(1, '默认仓库')").run()
+if (!db.prepare("SELECT id FROM users WHERE username='admin'").get()) {
+  const hash = bcrypt.hashSync('admin123', 10)
+  const r = db.prepare("INSERT INTO users(username, password_hash, role) VALUES('admin', ?, 'admin')").run(hash)
+  db.prepare("INSERT OR IGNORE INTO user_workspaces(user_id, workspace_id) VALUES(?, 1)").run(r.lastInsertRowid)
+}
 
 module.exports = db

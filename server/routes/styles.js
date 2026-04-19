@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const db = require('../db')
 const { withParsedImagesList } = require('../log-utils')
+const { requireAuth, resolveWorkspace } = require('../middleware/auth')
 const {
   getMaterials,
   upsertStyleMaterials,
@@ -11,8 +12,9 @@ const {
 
 router.get('/', (req, res) => {
   const { q } = req.query
-  let sql = 'SELECT id,name,customer,note,image_base64,created_at FROM styles WHERE 1=1'
-  const params = []
+  const wsId = resolveWorkspace(req)
+  let sql = 'SELECT id,name,customer,note,image_base64,created_at FROM styles WHERE workspace_id=?'
+  const params = [wsId]
   if (q) { sql += ' AND (name LIKE ? OR customer LIKE ?)'; params.push(`%${q}%`, `%${q}%`) }
   sql += ' ORDER BY created_at DESC'
   const styles = db.prepare(sql).all(...params)
@@ -38,16 +40,17 @@ router.get('/:id/timeline', (req, res) => {
   res.json({ style, logs: withParsedImagesList(logs) })
 })
 
-router.post('/', (req, res) => {
+router.post('/', requireAuth, (req, res) => {
   const { name, customer = '', note = '', image_base64 = '', materials = [] } = req.body
   if (!name) return res.status(400).json({ error: '款式名称不能为空' })
+  const wsId = resolveWorkspace(req)
 
   const insertStyle = db.prepare(
-    'INSERT INTO styles(name,customer,note,image_base64) VALUES(?,?,?,?)'
+    'INSERT INTO styles(name,customer,note,image_base64,workspace_id) VALUES(?,?,?,?,?)'
   )
 
   const styleId = db.transaction(() => {
-    const { lastInsertRowid: id } = insertStyle.run(name, customer, note, image_base64)
+    const { lastInsertRowid: id } = insertStyle.run(name, customer, note, image_base64, wsId)
     upsertStyleMaterials(id, materials)
     return id
   })()
@@ -55,7 +58,7 @@ router.post('/', (req, res) => {
   res.json({ id: styleId })
 })
 
-router.put('/:id', (req, res) => {
+router.put('/:id', requireAuth, (req, res) => {
   const { name, customer = '', note = '', image_base64, materials = [] } = req.body
   const existing = db.prepare('SELECT id,image_base64 FROM styles WHERE id=?').get(req.params.id)
   if (!existing) return res.status(404).json({ error: '款式不存在' })
@@ -73,7 +76,7 @@ router.put('/:id', (req, res) => {
   res.json({ ok: true, recalculated_logs: result })
 })
 
-router.post('/:id/append-estimates', (req, res) => {
+router.post('/:id/append-estimates', requireAuth, (req, res) => {
   const existing = db.prepare('SELECT id FROM styles WHERE id=?').get(req.params.id)
   if (!existing) return res.status(404).json({ error: '款式不存在' })
   const { materials = [] } = req.body
@@ -83,14 +86,14 @@ router.post('/:id/append-estimates', (req, res) => {
   res.json({ ok: true })
 })
 
-router.post('/:id/recalculate-usage', (req, res) => {
+router.post('/:id/recalculate-usage', requireAuth, (req, res) => {
   const existing = db.prepare('SELECT id FROM styles WHERE id=?').get(req.params.id)
   if (!existing) return res.status(404).json({ error: '款式不存在' })
   const recalculated = db.transaction(() => recalculateStyleEstimatedLogs(req.params.id))()
   res.json({ ok: true, recalculated_logs: recalculated })
 })
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM styles WHERE id=?').run(req.params.id)
   res.json({ ok: true })
 })

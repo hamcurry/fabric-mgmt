@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { getConfig, saveConfig, PRESETS } = require('../ai-config')
+const { requireAdmin } = require('../middleware/auth')
 
 // 返回预设列表（供前端下拉用）
 router.get('/presets', (req, res) => {
@@ -20,7 +21,7 @@ router.get('/', (req, res) => {
 })
 
 // 保存配置
-router.post('/', express.json(), (req, res) => {
+router.post('/', requireAdmin, express.json(), (req, res) => {
   const { preset, sdk_type, api_key, base_url, model } = req.body
   const current = getConfig()
 

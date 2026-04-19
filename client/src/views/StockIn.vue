@@ -33,7 +33,7 @@
         <el-input v-model="form.note" :placeholder="$t('stock_in.note_placeholder')" />
       </el-form-item>
       <el-form-item>
-        <el-button type="success" :loading="saving" @click="submitExisting">{{ $t('stock_in.confirm_btn') }}</el-button>
+        <el-button v-if="auth.canWrite.value" type="success" :loading="saving" @click="submitExisting">{{ $t('stock_in.confirm_btn') }}</el-button>
         <el-button @click="resetExisting">{{ $t('stock_in.reset_btn') }}</el-button>
       </el-form-item>
     </el-form>
@@ -74,7 +74,7 @@
         <el-input v-model="newForm.note" :placeholder="$t('common.optional')" />
       </el-form-item>
       <el-form-item>
-        <el-button type="success" :loading="saving" @click="submitNew">{{ $t('stock_in.new_and_stock_btn') }}</el-button>
+        <el-button v-if="auth.canWrite.value" type="success" :loading="saving" @click="submitNew">{{ $t('stock_in.new_and_stock_btn') }}</el-button>
         <el-button @click="resetNew">{{ $t('stock_in.reset_btn') }}</el-button>
       </el-form-item>
     </el-form>
@@ -260,6 +260,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import { auth } from '../stores/auth'
 import { fabricsApi, categoriesApi, stockApi, ocrApi } from '../api'
 
 const { t } = useI18n()

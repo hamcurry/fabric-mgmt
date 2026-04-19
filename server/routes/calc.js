@@ -2,8 +2,9 @@ const express = require('express')
 const router = express.Router()
 const db = require('../db')
 const { getEffectiveMaterials } = require('../style-usage')
+const { requireAuth, resolveWorkspace } = require('../middleware/auth')
 
-router.post('/', (req, res) => {
+router.post('/', requireAuth, (req, res) => {
   const { style_id, quantity } = req.body
   if (!style_id || !quantity || quantity <= 0) {
     return res.status(400).json({ error: '参数错误' })
@@ -22,16 +23,17 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: '该款式暂无可用的实际/客估用量' })
   }
 
+  const wsId = resolveWorkspace(req)
   const getFabrics = db.prepare(`
     SELECT id, color, current_stock, unit, alert_threshold,
            (current_stock <= alert_threshold) AS is_alert
-    FROM fabrics WHERE cat2_id = ?
+    FROM fabrics WHERE cat2_id = ? AND workspace_id = ?
     ORDER BY current_stock DESC, color
   `)
 
   const result = usableMaterials.map(m => {
     const required = parseFloat((m.effective_usage_per_piece * quantity).toFixed(3))
-    const fabrics = getFabrics.all(m.cat2_id)
+    const fabrics = getFabrics.all(m.cat2_id, wsId)
     const totalStock = fabrics.reduce((s, f) => s + f.current_stock, 0)
     return {
       cat2_id: m.cat2_id,
@@ -49,8 +51,8 @@ router.post('/', (req, res) => {
   })
 
   const { lastInsertRowid: calcId } = db.prepare(
-    'INSERT INTO calc_records(style_id,style_name,quantity,result_json) VALUES(?,?,?,?)'
-  ).run(style_id, style.name, quantity, JSON.stringify(result))
+    'INSERT INTO calc_records(style_id,style_name,quantity,result_json,workspace_id) VALUES(?,?,?,?,?)'
+  ).run(style_id, style.name, quantity, JSON.stringify(result), wsId)
 
   res.json({ calc_id: calcId, style, quantity, result })
 })

@@ -4,6 +4,7 @@ const multer = require('multer')
 const ExcelJS = require('exceljs')
 const { getConfig, isConfigured } = require('../ai-config')
 const { sanitizeImages } = require('../log-utils')
+const { requireAuth } = require('../middleware/auth')
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -237,7 +238,7 @@ async function recognizeFiles(files, prompt, cfgOverride) {
   return results
 }
 
-router.post('/stock-in', upload.array('files', 10), async (req, res) => {
+router.post('/stock-in', requireAuth, upload.array('files', 10), async (req, res) => {
   const files = req.files || []
   if (!files.length) return res.status(400).json({ error: '请上传图片或 PDF 文件' })
   try {
@@ -254,7 +255,7 @@ router.post('/stock-in', upload.array('files', 10), async (req, res) => {
   }
 })
 
-router.post('/stock-out', upload.array('files', 10), async (req, res) => {
+router.post('/stock-out', requireAuth, upload.array('files', 10), async (req, res) => {
   const files = req.files || []
   if (!files.length) return res.status(400).json({ error: '请上传图片或 PDF 文件' })
   try {

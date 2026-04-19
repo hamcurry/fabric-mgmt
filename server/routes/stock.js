@@ -3,16 +3,17 @@ const router = express.Router()
 const db = require('../db')
 const { getFabricFullName } = require('./fabrics')
 const { serializeImages, sanitizeImages, withParsedImagesList } = require('../log-utils')
+const { requireAuth, resolveWorkspace } = require('../middleware/auth')
 
 const insertStockLog = db.prepare(`
   INSERT INTO stock_logs(
     type,fabric_id,fabric_name,quantity,pieces,style_id,style_name,po_number,note,images_json,
-    usage_source,usage_per_piece_snapshot,style_material_cat2_id,calc_snapshot_json
+    usage_source,usage_per_piece_snapshot,style_material_cat2_id,calc_snapshot_json,workspace_id
   )
-  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 `)
 
-router.post('/in', (req, res) => {
+router.post('/in', requireAuth, (req, res) => {
   const { fabric_id, quantity, note = '', images = [] } = req.body
   if (!fabric_id || !quantity || quantity <= 0) {
     return res.status(400).json({ error: '参数错误' })
@@ -20,18 +21,19 @@ router.post('/in', (req, res) => {
   const fabric = db.prepare('SELECT * FROM fabrics WHERE id=?').get(fabric_id)
   if (!fabric) return res.status(404).json({ error: '面料不存在' })
 
+  const wsId = resolveWorkspace(req)
   const imagesJson = serializeImages(images)
 
   db.transaction(() => {
     db.prepare('UPDATE fabrics SET current_stock = current_stock + ? WHERE id=?')
       .run(quantity, fabric_id)
-    insertStockLog.run('in', fabric_id, getFabricFullName(fabric_id), quantity, null, null, '', '', note, imagesJson, '', null, null, '')
+    insertStockLog.run('in', fabric_id, getFabricFullName(fabric_id), quantity, null, null, '', '', note, imagesJson, '', null, null, '', wsId)
   })()
 
   res.json({ ok: true })
 })
 
-router.post('/out', (req, res) => {
+router.post('/out', requireAuth, (req, res) => {
   const {
     fabric_id,
     quantity,
@@ -62,6 +64,7 @@ router.post('/out', (req, res) => {
     styleName = style.name
   }
 
+  const wsId = resolveWorkspace(req)
   const imagesJson = serializeImages(images)
   const snapshotJson = JSON.stringify(Array.isArray(calc_snapshot) ? calc_snapshot : [])
 
@@ -71,20 +74,9 @@ router.post('/out', (req, res) => {
       db.prepare('UPDATE fabrics SET current_stock = current_stock - ? WHERE id=?')
         .run(quantity, fabric_id)
       insertStockLog.run(
-        'out',
-        fabric_id,
-        getFabricFullName(fabric_id),
-        quantity,
-        pieces ?? null,
-        style_id || null,
-        styleName,
-        po_number,
-        note,
-        imagesJson,
-        usage_source || '',
-        usage_per_piece_snapshot,
-        style_material_cat2_id,
-        snapshotJson
+        'out', fabric_id, getFabricFullName(fabric_id), quantity,
+        pieces ?? null, style_id || null, styleName, po_number, note, imagesJson,
+        usage_source || '', usage_per_piece_snapshot, style_material_cat2_id, snapshotJson, wsId
       )
     })()
     res.json({ ok: true })
@@ -93,7 +85,7 @@ router.post('/out', (req, res) => {
   }
 })
 
-router.post('/out/batch', (req, res) => {
+router.post('/out/batch', requireAuth, (req, res) => {
   const { items, style_id, po_number = '', note = '', images = [] } = req.body
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: '参数错误' })
@@ -107,6 +99,7 @@ router.post('/out/batch', (req, res) => {
   const styleName = style ? style.name : ''
   const sanitizedImages = sanitizeImages(images)
   const imagesJson = JSON.stringify(sanitizedImages)
+  const wsId = resolveWorkspace(req)
 
   try {
     db.transaction(() => {
@@ -117,20 +110,12 @@ router.post('/out/batch', (req, res) => {
         db.prepare('UPDATE fabrics SET current_stock = current_stock - ? WHERE id=?')
           .run(item.quantity, item.fabric_id)
         insertStockLog.run(
-          'out',
-          item.fabric_id,
-          fullName,
-          item.quantity,
-          item.pieces ?? null,
-          style_id || null,
-          styleName,
-          po_number,
-          item.note || note,
-          imagesJson,
-          item.usage_source || '',
-          item.usage_per_piece_snapshot ?? null,
-          item.style_material_cat2_id ?? null,
-          JSON.stringify(Array.isArray(item.calc_snapshot) ? item.calc_snapshot : [])
+          'out', item.fabric_id, fullName, item.quantity,
+          item.pieces ?? null, style_id || null, styleName, po_number,
+          item.note || note, imagesJson, item.usage_source || '',
+          item.usage_per_piece_snapshot ?? null, item.style_material_cat2_id ?? null,
+          JSON.stringify(Array.isArray(item.calc_snapshot) ? item.calc_snapshot : []),
+          wsId
         )
       }
     })()
@@ -140,7 +125,7 @@ router.post('/out/batch', (req, res) => {
   }
 })
 
-router.delete('/logs/:id', (req, res) => {
+router.delete('/logs/:id', requireAuth, (req, res) => {
   const log = db.prepare('SELECT * FROM stock_logs WHERE id=?').get(req.params.id)
   if (!log) return res.status(404).json({ error: '记录不存在' })
   try {
@@ -158,16 +143,16 @@ router.delete('/logs/:id', (req, res) => {
 
 router.get('/logs', (req, res) => {
   const { type, fabric_id, style_id, date_from, date_to } = req.query
-  let sql = 'SELECT * FROM stock_logs WHERE 1=1'
-  const params = []
+  const wsId = resolveWorkspace(req)
+  let sql = 'SELECT * FROM stock_logs WHERE workspace_id=?'
+  const params = [wsId]
   if (type) { sql += ' AND type=?'; params.push(type) }
   if (fabric_id) { sql += ' AND fabric_id=?'; params.push(fabric_id) }
   if (style_id) { sql += ' AND style_id=?'; params.push(style_id) }
   if (date_from) { sql += ' AND operated_at >= ?'; params.push(date_from) }
   if (date_to) { sql += ' AND operated_at <= ?'; params.push(date_to + ' 23:59:59') }
   sql += ' ORDER BY operated_at DESC'
-  const logs = db.prepare(sql).all(...params)
-  res.json(withParsedImagesList(logs))
+  res.json(withParsedImagesList(db.prepare(sql).all(...params)))
 })
 
 module.exports = router

@@ -1,9 +1,11 @@
 const express = require('express')
 const router = express.Router()
 const db = require('../db')
+const { resolveWorkspace } = require('../middleware/auth')
 
 // 库存汇总（含分类名称）
 router.get('/stock', (req, res) => {
+  const wsId = resolveWorkspace(req)
   const fabrics = db.prepare(`
     SELECT f.*,
            c2.name AS cat2_name,
@@ -13,8 +15,9 @@ router.get('/stock', (req, res) => {
     FROM fabrics f
     JOIN fabric_cat2 c2 ON c2.id = f.cat2_id
     JOIN fabric_cat1 c1 ON c1.id = c2.cat1_id
+    WHERE f.workspace_id=?
     ORDER BY c1.sort, c1.id, c2.sort, c2.id, f.color
-  `).all()
+  `).all(wsId)
   res.json(fabrics)
 })
 

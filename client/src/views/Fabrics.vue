@@ -3,8 +3,8 @@
     <!-- Toolbar -->
     <div class="fabrics-toolbar">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <el-button type="primary" icon="Plus" @click="openFabricDialog()">{{ $t('fabrics.add_fabric') }}</el-button>
-        <el-button icon="Setting" @click="catDialogVisible = true">{{ $t('fabrics.manage_categories') }}</el-button>
+        <el-button v-if="auth.canWrite.value" type="primary" icon="Plus" @click="openFabricDialog()">{{ $t('fabrics.add_fabric') }}</el-button>
+        <el-button v-if="auth.canWrite.value" icon="Setting" @click="catDialogVisible = true">{{ $t('fabrics.manage_categories') }}</el-button>
         <el-button icon="Refresh" @click="loadTree">{{ $t('common.refresh') }}</el-button>
       </div>
       <el-input
@@ -47,6 +47,7 @@
               @click="activeCat2Id = cat2.id"
             >{{ cat2.name }}</span>
             <el-button
+              v-if="auth.canWrite.value"
               size="small" icon="Plus" link
               @click="openFabricDialog({ cat1_id: activeCat1Node.id })"
             >{{ $t('fabrics.add_color') }}</el-button>
@@ -57,6 +58,7 @@
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
               <el-tag type="info" size="small">{{ cat2.name }}</el-tag>
               <el-button
+                v-if="auth.canWrite.value"
                 size="small" icon="Plus" link
                 @click="openFabricDialog({ cat1_id: activeCat1Node.id, cat2_id: cat2.id })"
               >{{ $t('fabrics.add_color') }}</el-button>
@@ -110,7 +112,7 @@
               </el-table-column>
               <el-table-column prop="unit" :label="$t('common.unit')" width="70" />
               <el-table-column prop="created_at" :label="$t('common.created_at')" width="155" />
-              <el-table-column :label="$t('common.operation')" width="60" fixed="right">
+              <el-table-column v-if="auth.canWrite.value" :label="$t('common.operation')" width="60" fixed="right">
                 <template #default="{ row }">
                   <el-dropdown trigger="click">
                     <el-button size="small" circle icon="MoreFilled" />
@@ -162,7 +164,7 @@
                     预警 {{ row.alert_threshold }}{{ row.unit }}
                   </span>
                 </div>
-                <el-dropdown trigger="click" size="small">
+                <el-dropdown v-if="auth.canWrite.value" trigger="click" size="small">
                   <el-button size="small" circle icon="MoreFilled" />
                   <template #dropdown>
                     <el-dropdown-menu>
@@ -310,6 +312,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Picture } from '@element-plus/icons-vue'
+import { auth } from '../stores/auth'
 import { fabricsApi, categoriesApi } from '../api'
 
 const { t } = useI18n()

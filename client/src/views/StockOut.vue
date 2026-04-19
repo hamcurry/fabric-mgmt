@@ -118,7 +118,7 @@
         <span style="color:var(--color-text-secondary);font-size:13px">{{ $t('stock_out.total_items', { n: allItems.length }) }}</span>
         <el-space>
           <el-button @click="reset">{{ $t('stock_out.reset_btn') }}</el-button>
-          <el-button type="warning" :loading="saving" @click="submit">{{ $t('stock_out.confirm_btn') }}</el-button>
+          <el-button v-if="auth.canWrite.value" type="warning" :loading="saving" @click="submit">{{ $t('stock_out.confirm_btn') }}</el-button>
         </el-space>
       </div>
     </div>
@@ -319,6 +319,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import { auth } from '../stores/auth'
 import { stylesApi, fabricsApi, stockApi, ocrApi, categoriesApi } from '../api'
 
 const { t } = useI18n()

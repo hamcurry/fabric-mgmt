@@ -1,10 +1,12 @@
 const express = require('express')
 const router = express.Router()
 const db = require('../db')
+const { requireAuth, resolveWorkspace } = require('../middleware/auth')
 
 // 查询面料（返回带完整分类路径的列表）
 router.get('/', (req, res) => {
   const { cat1_id, cat2_id } = req.query
+  const wsId = resolveWorkspace(req)
   let sql = `
     SELECT f.id, f.cat2_id, f.color, f.unit, f.current_stock, f.alert_threshold, f.created_at,
            f.image_base64,
@@ -14,9 +16,9 @@ router.get('/', (req, res) => {
     FROM fabrics f
     JOIN fabric_cat2 c2 ON c2.id = f.cat2_id
     JOIN fabric_cat1 c1 ON c1.id = c2.cat1_id
-    WHERE 1=1
+    WHERE f.workspace_id=?
   `
-  const params = []
+  const params = [wsId]
   if (cat2_id) { sql += ' AND f.cat2_id=?'; params.push(cat2_id) }
   else if (cat1_id) { sql += ' AND c2.cat1_id=?'; params.push(cat1_id) }
   sql += ' ORDER BY c1.sort, c1.id, c2.sort, c2.id, f.color'
@@ -25,6 +27,7 @@ router.get('/', (req, res) => {
 
 // 获取分组树（用于前端树状展示）
 router.get('/tree', (req, res) => {
+  const wsId = resolveWorkspace(req)
   const rows = db.prepare(`
     SELECT f.id, f.cat2_id, f.color, f.unit, f.current_stock, f.alert_threshold, f.created_at,
            f.image_base64,
@@ -34,10 +37,10 @@ router.get('/tree', (req, res) => {
     FROM fabrics f
     JOIN fabric_cat2 c2 ON c2.id = f.cat2_id
     JOIN fabric_cat1 c1 ON c1.id = c2.cat1_id
+    WHERE f.workspace_id=?
     ORDER BY c1.sort, c1.id, c2.sort, c2.id, f.color
-  `).all()
+  `).all(wsId)
 
-  // 组装树：cat1 -> cat2 -> fabrics
   const cat1Map = {}
   for (const row of rows) {
     if (!cat1Map[row.cat1_id]) {
@@ -68,17 +71,18 @@ router.get('/tree', (req, res) => {
 })
 
 // 新建面料
-router.post('/', (req, res) => {
+router.post('/', requireAuth, (req, res) => {
   const { cat2_id, color = '', unit = '米', current_stock = 0, alert_threshold = 20, image_base64 = '' } = req.body
   if (!cat2_id) return res.status(400).json({ error: '请选择二级类目' })
+  const wsId = resolveWorkspace(req)
   const r = db.prepare(
-    'INSERT INTO fabrics(cat2_id, color, unit, current_stock, alert_threshold, image_base64) VALUES(?,?,?,?,?,?)'
-  ).run(cat2_id, color, unit, current_stock, alert_threshold, image_base64)
+    'INSERT INTO fabrics(cat2_id, color, unit, current_stock, alert_threshold, image_base64, workspace_id) VALUES(?,?,?,?,?,?,?)'
+  ).run(cat2_id, color, unit, current_stock, alert_threshold, image_base64, wsId)
   res.json({ id: r.lastInsertRowid })
 })
 
 // 编辑面料
-router.put('/:id', (req, res) => {
+router.put('/:id', requireAuth, (req, res) => {
   const { cat2_id, color, unit, current_stock, alert_threshold, image_base64 } = req.body
   const existing = db.prepare('SELECT id, image_base64 FROM fabrics WHERE id=?').get(req.params.id)
   if (!existing) return res.status(404).json({ error: '面料不存在' })
@@ -90,7 +94,7 @@ router.put('/:id', (req, res) => {
 })
 
 // 删除面料
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireAuth, (req, res) => {
   const usedInLog = db.prepare('SELECT id FROM stock_logs WHERE fabric_id=?').get(req.params.id)
   if (usedInLog) return res.status(400).json({ error: '该面料存在入出库记录，无法删除' })
   try {
