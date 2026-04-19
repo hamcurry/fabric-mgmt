@@ -69,15 +69,18 @@
       </el-table-column>
       <el-table-column prop="note" :label="$t('common.note')" min-width="100" show-overflow-tooltip />
       <el-table-column prop="created_at" :label="$t('common.created_at')" width="155" />
-      <el-table-column :label="$t('common.operation')" width="160" fixed="right">
+      <el-table-column :label="$t('common.operation')" width="60" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="$router.push(`/styles/${row.id}`)">{{ $t('common.detail') }}</el-button>
-          <el-button size="small" @click="openDialog(row)">{{ $t('common.edit') }}</el-button>
-          <el-popconfirm :title="$t('styles.confirm_delete')" @confirm="remove(row.id)">
-            <template #reference>
-              <el-button size="small" type="danger">{{ $t('common.delete') }}</el-button>
+          <el-dropdown trigger="click">
+            <el-button size="small" circle icon="MoreFilled" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="$router.push(`/styles/${row.id}`)">{{ $t('common.detail') }}</el-dropdown-item>
+                <el-dropdown-item @click="openDialog(row)">{{ $t('common.edit') }}</el-dropdown-item>
+                <el-dropdown-item class="danger-item" @click="confirmRemove(row.id)">{{ $t('common.delete') }}</el-dropdown-item>
+              </el-dropdown-menu>
             </template>
-          </el-popconfirm>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
