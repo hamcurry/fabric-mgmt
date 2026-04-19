@@ -28,18 +28,18 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ id: req.user.id, username: req.user.username, role: req.user.role, workspaceIds })
 })
 
-// 返回当前用户可访问的仓库列表（WorkspaceSwitcher 用）
-router.get('/workspaces', requireAuth, (req, res) => {
-  let rows
-  if (req.user.role === 'admin') {
-    rows = db.prepare('SELECT id, name FROM workspaces ORDER BY id').all()
-  } else {
-    const ids = getUserWorkspaceIds(req.user.id)
-    if (!ids.length) return res.json([])
-    const placeholders = ids.map(() => '?').join(',')
-    rows = db.prepare(`SELECT id, name FROM workspaces WHERE id IN (${placeholders}) ORDER BY id`).all(...ids)
+// 返回当前用户可访问的仓库列表（WorkspaceSwitcher 用，访客返回全部）
+router.get('/workspaces', (req, res) => {
+  if (!req.user) {
+    return res.json(db.prepare('SELECT id, name FROM workspaces ORDER BY id').all())
   }
-  res.json(rows)
+  if (req.user.role === 'admin') {
+    return res.json(db.prepare('SELECT id, name FROM workspaces ORDER BY id').all())
+  }
+  const ids = getUserWorkspaceIds(req.user.id)
+  if (!ids.length) return res.json([])
+  const placeholders = ids.map(() => '?').join(',')
+  res.json(db.prepare(`SELECT id, name FROM workspaces WHERE id IN (${placeholders}) ORDER BY id`).all(...ids))
 })
 
 // 修改自己的密码

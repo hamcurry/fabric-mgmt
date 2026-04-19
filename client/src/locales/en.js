@@ -261,6 +261,17 @@ export default {
     confirm_btn: 'Overwrite & Restore',
     success: 'Restore successful. Service is restarting — please refresh the page in a moment…',
     invalid_file: 'The selected file is not a valid SQLite database',
-    select_first: 'Please select a backup file first'
+    select_first: 'Please select a backup file first',
+    clear_title: 'Clear All Data',
+    clear_desc: 'Delete all fabrics, styles, and stock log records. User accounts and workspace settings are not affected.',
+    clear_warning: 'This will permanently delete all business data and cannot be undone!',
+    clear_btn: 'Clear Data',
+    clear_confirm_title: 'Clear All Data?',
+    clear_confirm_msg: 'Type "confirm clear" below to proceed. This will delete all fabrics, styles, and stock records. It cannot be undone.',
+    clear_confirm_placeholder: 'Type: confirm clear',
+    clear_confirm_keyword: 'confirm clear',
+    clear_confirm_btn: 'Permanently Delete All Data',
+    clear_success: 'All data has been cleared',
+    clear_keyword_error: 'Input did not match — operation cancelled'
   }
 }

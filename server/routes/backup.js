@@ -38,4 +38,22 @@ router.post('/restore', requireAdmin, express.raw({ type: 'application/octet-str
   }
 })
 
+// Clear all business data (keeps workspaces/users intact)
+router.delete('/clear', requireAdmin, (req, res) => {
+  try {
+    db.exec(`
+      DELETE FROM stock_logs;
+      DELETE FROM calc_records;
+      DELETE FROM style_materials;
+      DELETE FROM styles;
+      DELETE FROM fabrics;
+      DELETE FROM fabric_cat2;
+      DELETE FROM fabric_cat1;
+    `)
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 module.exports = router

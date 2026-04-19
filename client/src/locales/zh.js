@@ -261,6 +261,17 @@ export default {
     confirm_btn: '确认覆盖',
     success: '还原成功，服务即将重启，请稍后刷新页面…',
     invalid_file: '所选文件不是有效的 SQLite 数据库',
-    select_first: '请先选择备份文件'
+    select_first: '请先选择备份文件',
+    clear_title: '清空所有数据',
+    clear_desc: '删除所有面料、款式、出入库记录等业务数据。用户账号与仓库配置不受影响。',
+    clear_warning: '此操作将永久清空全部业务数据，不可恢复！',
+    clear_btn: '清空数据',
+    clear_confirm_title: '确认清空所有数据？',
+    clear_confirm_msg: '请在下方输入 "确认清空" 以继续。此操作将删除所有面料、款式及出入库记录，且无法撤销。',
+    clear_confirm_placeholder: '请输入：确认清空',
+    clear_confirm_keyword: '确认清空',
+    clear_confirm_btn: '永久删除所有数据',
+    clear_success: '所有数据已清空',
+    clear_keyword_error: '输入内容不匹配，操作已取消'
   }
 }

@@ -75,6 +75,10 @@ export const reportsApi = {
   stock: () => http.get('/reports/stock')
 }
 
+export const backupApi = {
+  clear: () => http.delete('/backup/clear')
+}
+
 export const exportUrl = (params) => {
   const wsId = parseInt(localStorage.getItem('workspace_id')) || 1
   const merged = { workspace_id: wsId, ...params }

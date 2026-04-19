@@ -81,6 +81,24 @@
       </el-button>
     </el-card>
 
+    <!-- 清空数据 -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <template #header><b>{{ $t('backup.clear_title') }}</b></template>
+      <el-alert
+        type="error"
+        :title="$t('backup.clear_warning')"
+        show-icon
+        :closable="false"
+        style="margin-bottom:16px"
+      />
+      <p style="color:var(--color-text-secondary);font-size:13px;margin-bottom:16px">
+        {{ $t('backup.clear_desc') }}
+      </p>
+      <el-button type="danger" :loading="clearing" @click="confirmClear">
+        {{ $t('backup.clear_btn') }}
+      </el-button>
+    </el-card>
+
     <!-- 还原数据 -->
     <el-card shadow="never">
       <template #header><b>{{ $t('backup.restore_title') }}</b></template>
@@ -118,7 +136,7 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { aiSettingsApi } from '../api'
+import { aiSettingsApi, backupApi } from '../api'
 
 const { t } = useI18n()
 
@@ -166,6 +184,39 @@ const testAiConfig = async () => {
     ElMessage.error(t('ai_settings.test_fail', { msg: e.message }))
   } finally {
     aiTesting.value = false
+  }
+}
+
+// ── 清空数据 ─────────────────────────────────────────────────────────
+const clearing = ref(false)
+
+const confirmClear = async () => {
+  try {
+    const { value: input } = await ElMessageBox.prompt(
+      t('backup.clear_confirm_msg'),
+      t('backup.clear_confirm_title'),
+      {
+        confirmButtonText: t('backup.clear_confirm_btn'),
+        cancelButtonText:  t('common.cancel'),
+        inputPlaceholder:  t('backup.clear_confirm_placeholder'),
+        confirmButtonClass: 'el-button--danger',
+        type: 'warning'
+      }
+    )
+    if (input?.trim() !== t('backup.clear_confirm_keyword')) {
+      ElMessage.warning(t('backup.clear_keyword_error'))
+      return
+    }
+  } catch { return }
+
+  clearing.value = true
+  try {
+    await backupApi.clear()
+    ElMessage.success(t('backup.clear_success'))
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    clearing.value = false
   }
 }
 

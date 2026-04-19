@@ -16,6 +16,7 @@ export const auth = {
   async init() {
     const token = localStorage.getItem('token')
     if (!token) {
+      await auth.loadWorkspaces()
       state.initialized = true
       return
     }
@@ -41,12 +42,10 @@ export const auth = {
   },
 
   async loadWorkspaces() {
-    const token = localStorage.getItem('token')
-    if (!token) return
     try {
-      const res = await fetch('/api/auth/workspaces', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const token = localStorage.getItem('token')
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      const res = await fetch('/api/auth/workspaces', { headers })
       if (res.ok) state.workspaces = await res.json()
     } catch {}
   },
