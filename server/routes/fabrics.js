@@ -3,13 +3,21 @@ const router = express.Router()
 const db = require('../db')
 const { requireAuth, resolveWorkspace } = require('../middleware/auth')
 
+function parseImages(row) {
+  try {
+    const arr = JSON.parse(row.images_json || '[]')
+    if (arr.length) return arr
+  } catch {}
+  return row.image_base64 ? [row.image_base64] : []
+}
+
 // 查询面料（返回带完整分类路径的列表）
 router.get('/', (req, res) => {
   const { cat1_id, cat2_id } = req.query
   const wsId = resolveWorkspace(req)
   let sql = `
     SELECT f.id, f.cat2_id, f.color, f.unit, f.current_stock, f.alert_threshold, f.created_at,
-           f.image_base64,
+           f.image_base64, f.images_json,
            c2.name AS cat2_name, c2.cat1_id,
            c1.name AS cat1_name,
            (f.current_stock <= f.alert_threshold) AS is_alert
@@ -22,7 +30,8 @@ router.get('/', (req, res) => {
   if (cat2_id) { sql += ' AND f.cat2_id=?'; params.push(cat2_id) }
   else if (cat1_id) { sql += ' AND c2.cat1_id=?'; params.push(cat1_id) }
   sql += ' ORDER BY c1.sort, c1.id, c2.sort, c2.id, f.color'
-  res.json(db.prepare(sql).all(...params))
+  const rows = db.prepare(sql).all(...params)
+  res.json(rows.map(r => ({ ...r, images: parseImages(r) })))
 })
 
 // 获取分组树（用于前端树状展示）
@@ -30,7 +39,7 @@ router.get('/tree', (req, res) => {
   const wsId = resolveWorkspace(req)
   const rows = db.prepare(`
     SELECT f.id, f.cat2_id, f.color, f.unit, f.current_stock, f.alert_threshold, f.created_at,
-           f.image_base64,
+           f.image_base64, f.images_json,
            c2.name AS cat2_name, c2.cat1_id,
            c1.name AS cat1_name,
            (f.current_stock <= f.alert_threshold) AS is_alert
@@ -59,6 +68,7 @@ router.get('/tree', (req, res) => {
       is_alert: row.is_alert,
       created_at: row.created_at,
       image_base64: row.image_base64 || '',
+      images: parseImages(row),
       full_name: `${row.cat1_name} / ${row.cat2_name} / ${row.color || '无颜色'}`
     })
   }
@@ -72,24 +82,34 @@ router.get('/tree', (req, res) => {
 
 // 新建面料
 router.post('/', requireAuth, (req, res) => {
-  const { cat2_id, color = '', unit = '米', current_stock = 0, alert_threshold = 20, image_base64 = '' } = req.body
+  const { cat2_id, color = '', unit = '米', current_stock = 0, alert_threshold = 20, images = [], image_base64 = '' } = req.body
   if (!cat2_id) return res.status(400).json({ error: '请选择二级类目' })
   const wsId = resolveWorkspace(req)
+  const imgs = images.length ? images : (image_base64 ? [image_base64] : [])
   const r = db.prepare(
-    'INSERT INTO fabrics(cat2_id, color, unit, current_stock, alert_threshold, image_base64, workspace_id) VALUES(?,?,?,?,?,?,?)'
-  ).run(cat2_id, color, unit, current_stock, alert_threshold, image_base64, wsId)
+    'INSERT INTO fabrics(cat2_id,color,unit,current_stock,alert_threshold,image_base64,images_json,workspace_id) VALUES(?,?,?,?,?,?,?,?)'
+  ).run(cat2_id, color, unit, current_stock, alert_threshold, imgs[0] || '', JSON.stringify(imgs), wsId)
   res.json({ id: r.lastInsertRowid })
 })
 
 // 编辑面料
 router.put('/:id', requireAuth, (req, res) => {
-  const { cat2_id, color, unit, current_stock, alert_threshold, image_base64 } = req.body
-  const existing = db.prepare('SELECT id, image_base64 FROM fabrics WHERE id=?').get(req.params.id)
+  const { cat2_id, color, unit, current_stock, alert_threshold, images, image_base64 } = req.body
+  const existing = db.prepare('SELECT id,image_base64,images_json FROM fabrics WHERE id=?').get(req.params.id)
   if (!existing) return res.status(404).json({ error: '面料不存在' })
-  const imgVal = image_base64 !== undefined ? image_base64 : existing.image_base64
+
+  let imgs
+  if (images !== undefined) {
+    imgs = images
+  } else if (image_base64 !== undefined) {
+    imgs = image_base64 ? [image_base64] : []
+  } else {
+    imgs = parseImages(existing)
+  }
+
   db.prepare(
-    'UPDATE fabrics SET cat2_id=?,color=?,unit=?,current_stock=?,alert_threshold=?,image_base64=? WHERE id=?'
-  ).run(cat2_id, color, unit, current_stock, alert_threshold, imgVal, req.params.id)
+    'UPDATE fabrics SET cat2_id=?,color=?,unit=?,current_stock=?,alert_threshold=?,image_base64=?,images_json=? WHERE id=?'
+  ).run(cat2_id, color, unit, current_stock, alert_threshold, imgs[0] || '', JSON.stringify(imgs), req.params.id)
   res.json({ ok: true })
 })
 

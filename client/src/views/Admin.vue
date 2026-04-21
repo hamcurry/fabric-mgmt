@@ -7,7 +7,7 @@
           <el-button type="primary" icon="Plus" @click="openWsDialog()">新增仓库</el-button>
         </div>
         <el-table :data="workspaces" stripe>
-          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="id" label="ID" width="70" />
           <el-table-column prop="name" label="名称" />
           <el-table-column prop="note" label="备注" />
           <el-table-column prop="created_at" label="创建时间" width="160" />
@@ -26,9 +26,9 @@
           <el-button type="primary" icon="Plus" @click="openUserDialog()">新增用户</el-button>
         </div>
         <el-table :data="users" stripe>
-          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="id" label="ID" width="70" />
           <el-table-column prop="username" label="用户名" />
-          <el-table-column prop="role" label="角色" width="80">
+          <el-table-column prop="role" label="角色" width="90">
             <template #default="{ row }">
               <el-tag :type="row.role === 'admin' ? 'danger' : 'info'" size="small">
                 {{ row.role === 'admin' ? '管理员' : '普通' }}

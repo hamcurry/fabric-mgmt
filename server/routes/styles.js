@@ -10,15 +10,23 @@ const {
   recalculateStyleEstimatedLogs
 } = require('../style-usage')
 
+function parseImages(row) {
+  try {
+    const arr = JSON.parse(row.images_json || '[]')
+    if (arr.length) return arr
+  } catch {}
+  return row.image_base64 ? [row.image_base64] : []
+}
+
 router.get('/', (req, res) => {
   const { q } = req.query
   const wsId = resolveWorkspace(req)
-  let sql = 'SELECT id,name,customer,note,image_base64,created_at FROM styles WHERE workspace_id=?'
+  let sql = 'SELECT id,name,customer,note,image_base64,images_json,created_at FROM styles WHERE workspace_id=?'
   const params = [wsId]
   if (q) { sql += ' AND (name LIKE ? OR customer LIKE ?)'; params.push(`%${q}%`, `%${q}%`) }
   sql += ' ORDER BY created_at DESC'
   const styles = db.prepare(sql).all(...params)
-  const result = styles.map(s => ({ ...s, materials: getMaterials(s.id) }))
+  const result = styles.map(s => ({ ...s, images: parseImages(s), materials: getMaterials(s.id) }))
   res.json(result)
 })
 
@@ -26,6 +34,7 @@ router.get('/:id', (req, res) => {
   const style = db.prepare('SELECT * FROM styles WHERE id=?').get(req.params.id)
   if (!style) return res.status(404).json({ error: '款式不存在' })
   style.materials = getMaterials(style.id)
+  style.images = parseImages(style)
   res.json(style)
 })
 
@@ -41,16 +50,20 @@ router.get('/:id/timeline', (req, res) => {
 })
 
 router.post('/', requireAuth, (req, res) => {
-  const { name, customer = '', note = '', image_base64 = '', materials = [] } = req.body
+  const { name, customer = '', note = '', images = [], image_base64 = '', materials = [] } = req.body
   if (!name) return res.status(400).json({ error: '款式名称不能为空' })
   const wsId = resolveWorkspace(req)
 
+  const imgs = images.length ? images : (image_base64 ? [image_base64] : [])
+  const imagesVal = JSON.stringify(imgs)
+  const imgLegacy = imgs[0] || ''
+
   const insertStyle = db.prepare(
-    'INSERT INTO styles(name,customer,note,image_base64,workspace_id) VALUES(?,?,?,?,?)'
+    'INSERT INTO styles(name,customer,note,image_base64,images_json,workspace_id) VALUES(?,?,?,?,?,?)'
   )
 
   const styleId = db.transaction(() => {
-    const { lastInsertRowid: id } = insertStyle.run(name, customer, note, image_base64, wsId)
+    const { lastInsertRowid: id } = insertStyle.run(name, customer, note, imgLegacy, imagesVal, wsId)
     upsertStyleMaterials(id, materials)
     return id
   })()
@@ -59,15 +72,24 @@ router.post('/', requireAuth, (req, res) => {
 })
 
 router.put('/:id', requireAuth, (req, res) => {
-  const { name, customer = '', note = '', image_base64, materials = [] } = req.body
-  const existing = db.prepare('SELECT id,image_base64 FROM styles WHERE id=?').get(req.params.id)
+  const { name, customer = '', note = '', images, image_base64, materials = [] } = req.body
+  const existing = db.prepare('SELECT id,image_base64,images_json FROM styles WHERE id=?').get(req.params.id)
   if (!existing) return res.status(404).json({ error: '款式不存在' })
 
-  const imgVal = image_base64 !== undefined ? image_base64 : existing.image_base64
+  let imgs
+  if (images !== undefined) {
+    imgs = images
+  } else if (image_base64 !== undefined) {
+    imgs = image_base64 ? [image_base64] : []
+  } else {
+    imgs = parseImages(existing)
+  }
+  const imagesVal = JSON.stringify(imgs)
+  const imgLegacy = imgs[0] || ''
 
   const result = db.transaction(() => {
-    db.prepare('UPDATE styles SET name=?,customer=?,note=?,image_base64=? WHERE id=?')
-      .run(name, customer, note, imgVal, req.params.id)
+    db.prepare('UPDATE styles SET name=?,customer=?,note=?,image_base64=?,images_json=? WHERE id=?')
+      .run(name, customer, note, imgLegacy, imagesVal, req.params.id)
     db.prepare('DELETE FROM style_materials WHERE style_id=?').run(req.params.id)
     upsertStyleMaterials(req.params.id, materials)
     return recalculateStyleEstimatedLogs(req.params.id)

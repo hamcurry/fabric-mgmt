@@ -18,7 +18,8 @@ export default {
     reports: '报表导出', reports_desc: '导出库存报表为 Excel 文件',
     warehouse: '仓库操作',
     stock: '出入库', more: '更多',
-    backup: '备份还原', backup_desc: '备份与恢复数据库'
+    backup: '备份还原', backup_desc: '备份与恢复数据库',
+    admin: '管理后台', admin_desc: '用户与仓库管理'
   },
   common: {
     save: '保存', cancel: '取消', delete: '删除', edit: '编辑', add: '新增',
@@ -87,7 +88,8 @@ export default {
     style_name: '款式名称', materials: '面料用量', not_set: '未设置',
     edit_style: '编辑款式',
     customer_placeholder: '客户名称（可选）',
-    paste_placeholder: '点击此处后 Ctrl+V 粘贴截图',
+    paste_placeholder: '点击此处后 Ctrl+V 粘贴截图，可多次粘贴',
+    paste_add_more: '继续粘贴可添加更多图片',
     add_material: '添加面料',
     confirm_delete: '确认删除该款式？',
     val_name: '请输入款式名称',

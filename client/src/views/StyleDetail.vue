@@ -13,15 +13,12 @@
       </template>
 
       <el-row :gutter="16">
-        <el-col :xs="24" :sm="style.image_base64 ? 8 : 0" v-if="style.image_base64">
-          <el-image
-            :src="style.image_base64"
-            style="width:100%;max-height:300px;object-fit:contain;border-radius:6px;border:1px solid var(--color-border)"
-            :preview-src-list="[style.image_base64]"
-            preview-teleported
-          />
+        <el-col :xs="24" :sm="(style.images||[]).length ? 10 : 0" v-if="(style.images||[]).length">
+          <div class="detail-img-gallery">
+            <ImageStrip :images="style.images" :size="120" :max-visible="6" />
+          </div>
         </el-col>
-        <el-col :xs="24" :sm="style.image_base64 ? 16 : 24">
+        <el-col :xs="24" :sm="(style.images||[]).length ? 14 : 24">
           <el-descriptions :column="2" border>
             <el-descriptions-item :label="$t('common.customer')">{{ style.customer || '-' }}</el-descriptions-item>
             <el-descriptions-item :label="$t('common.created_at')">{{ style.created_at }}</el-descriptions-item>
@@ -76,6 +73,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { stylesApi } from '../api'
+import ImageStrip from '../components/ImageStrip.vue'
 
 const route = useRoute()
 const style = ref(null)
@@ -119,3 +117,12 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.detail-img-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+</style>

@@ -22,28 +22,9 @@
     </div>
 
     <el-table class="style-desktop-table" :data="filteredStyles" v-loading="loading">
-      <el-table-column :label="$t('styles.style_image')" width="80">
+      <el-table-column :label="$t('styles.style_image')" width="100">
         <template #default="{ row }">
-          <el-tooltip
-            v-if="row.image_base64"
-            effect="light"
-            placement="right"
-            :show-after="300"
-            :hide-after="0"
-            popper-class="img-hover-popper"
-          >
-            <template #content>
-              <img :src="row.image_base64" style="max-width:300px;max-height:300px;object-fit:contain;display:block" />
-            </template>
-            <el-image
-              :src="row.image_base64"
-              fit="cover"
-              style="width:50px;height:50px;border-radius:4px;cursor:zoom-in;display:block"
-              :preview-src-list="[row.image_base64]"
-              preview-teleported
-            />
-          </el-tooltip>
-          <span v-else style="color:#ddd;font-size:12px">{{ $t('styles.no_image') }}</span>
+          <ImageStrip :images="row.images || []" :size="50" :max-visible="1" show-empty :empty-text="$t('styles.no_image')" />
         </template>
       </el-table-column>
       <el-table-column prop="name" :label="$t('styles.style_name')" min-width="130">
@@ -88,15 +69,10 @@
     <!-- 移动端卡片列表 -->
     <div class="style-mobile-cards" v-loading="loading">
       <div v-for="row in filteredStyles" :key="row.id" class="style-card">
-        <el-image
-          v-if="row.image_base64"
-          :src="row.image_base64"
-          fit="cover"
-          class="style-card-img"
-          :preview-src-list="[row.image_base64]"
-          preview-teleported
-        />
-        <div v-else class="style-card-img style-card-no-img">{{ $t('styles.no_image') }}</div>
+        <div class="style-card-img-wrap">
+          <ImageStrip v-if="(row.images||[]).length" :images="row.images" :size="56" :max-visible="1" />
+          <div v-else class="style-card-no-img">{{ $t('styles.no_image') }}</div>
+        </div>
         <div class="style-card-body">
           <div class="style-card-name">
             <el-link @click="$router.push(`/styles/${row.id}`)">{{ row.name }}</el-link>
@@ -136,32 +112,39 @@
         </el-form-item>
 
         <el-form-item :label="$t('styles.style_image')">
-          <input ref="imageFileInput" type="file" accept="image/*" style="display:none" @change="handleImageFile" />
-          <input ref="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" @change="handleImageFile" />
+          <input ref="imageFileInput" type="file" accept="image/*" multiple style="display:none" @change="handleImageFiles" />
+          <input ref="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" @change="handleImageFiles" />
           <div style="width:100%">
+            <!-- Existing images grid -->
+            <div v-if="form.images.length" class="img-edit-grid">
+              <div
+                v-for="(src, i) in form.images" :key="i"
+                class="img-edit-thumb"
+              >
+                <img :src="src" />
+                <el-button
+                  size="small" type="danger" circle icon="Close"
+                  class="img-edit-del"
+                  @click.stop="form.images.splice(i, 1)"
+                />
+              </div>
+            </div>
+
+            <!-- Paste / drop zone -->
             <div
               ref="pasteZoneRef"
               tabindex="0"
-              style="width:100%;border:2px dashed var(--color-border);border-radius:8px;padding:12px;cursor:pointer;outline:none;transition:border-color .15s"
-              :style="{ borderColor: pasteActive ? 'var(--color-primary)' : 'var(--color-border)' }"
+              class="paste-zone"
+              :class="{ active: pasteActive }"
               @click="pasteZoneRef.focus()"
               @focus="pasteActive=true"
               @blur="pasteActive=false"
               @paste="handlePaste"
             >
-              <div v-if="!form.image_base64" style="text-align:center;color:var(--color-text-tertiary);padding:8px 0">
-                <el-icon style="font-size:24px"><Picture /></el-icon>
-                <div style="font-size:13px;margin-top:4px">{{ $t('styles.paste_placeholder') }}</div>
-              </div>
-              <div v-else style="position:relative;display:inline-block">
-                <img :src="form.image_base64" style="max-height:160px;max-width:100%;border-radius:4px" />
-                <el-button
-                  size="small" type="danger" circle icon="Close"
-                  style="position:absolute;top:-8px;right:-8px"
-                  @click.stop="form.image_base64=''"
-                />
-              </div>
+              <el-icon style="font-size:22px"><Picture /></el-icon>
+              <div style="font-size:13px;margin-top:4px">{{ form.images.length ? $t('styles.paste_add_more') : $t('styles.paste_placeholder') }}</div>
             </div>
+
             <div style="display:flex;gap:8px;margin-top:8px">
               <el-button size="small" icon="Camera" @click="cameraInput.click()">拍照</el-button>
               <el-button size="small" icon="Picture" @click="imageFileInput.click()">从相册选择</el-button>
@@ -235,8 +218,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { stylesApi, categoriesApi } from '../api'
+import { Picture } from '@element-plus/icons-vue'
 import { auth } from '../stores/auth'
+import { stylesApi, categoriesApi } from '../api'
+import { compressFile, compressBlob } from '../utils/image'
+import ImageStrip from '../components/ImageStrip.vue'
 
 const { t } = useI18n()
 
@@ -268,7 +254,7 @@ const filteredStyles = computed(() => {
 })
 
 const defaultForm = () => ({
-  id: null, name: '', customer: '', note: '', image_base64: '', materials: []
+  id: null, name: '', customer: '', note: '', images: [], materials: []
 })
 const form = ref(defaultForm())
 const rules = computed(() => ({
@@ -295,7 +281,7 @@ const openDialog = async (row = null) => {
       name: detail.name,
       customer: detail.customer || '',
       note: detail.note || '',
-      image_base64: detail.image_base64 || '',
+      images: detail.images || (detail.image_base64 ? [detail.image_base64] : []),
       materials: detail.materials.map(m => ({
         cat1_id: m.cat1_id,
         cat2_id: m.cat2_id,
@@ -309,38 +295,22 @@ const openDialog = async (row = null) => {
   dialogVisible.value = true
 }
 
-const handleImageFile = (e) => {
-  const file = e.target.files?.[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = (ev) => {
-    const img = new Image()
-    img.onload = () => {
-      const MAX = 1200
-      let w = img.naturalWidth, h = img.naturalHeight
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round(h * MAX / w); w = MAX }
-        else { w = Math.round(w * MAX / h); h = MAX }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width = w; canvas.height = h
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-      form.value.image_base64 = canvas.toDataURL('image/jpeg', 0.85)
-    }
-    img.src = ev.target.result
+const handleImageFiles = async (e) => {
+  const files = Array.from(e.target.files || [])
+  for (const file of files) {
+    const dataUrl = await compressFile(file)
+    form.value.images.push(dataUrl)
   }
-  reader.readAsDataURL(file)
   e.target.value = ''
 }
 
-const handlePaste = (e) => {
+const handlePaste = async (e) => {
   const items = e.clipboardData?.items || []
   for (const item of items) {
     if (item.type.startsWith('image/')) {
       const blob = item.getAsFile()
-      const reader = new FileReader()
-      reader.onload = (ev) => { form.value.image_base64 = ev.target.result }
-      reader.readAsDataURL(blob)
+      const dataUrl = await compressBlob(blob)
+      form.value.images.push(dataUrl)
       break
     }
   }
@@ -354,7 +324,7 @@ const save = async () => {
       name: form.value.name,
       customer: form.value.customer,
       note: form.value.note,
-      image_base64: form.value.image_base64,
+      images: form.value.images,
       materials: form.value.materials.filter(m =>
         m.cat2_id && (m.actual_usage_per_piece != null || m.estimated_usage_per_piece != null)
       )
@@ -398,8 +368,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-:deep(.img-hover-popper) { padding: 4px; }
-
 .material-row {
   display: grid;
   grid-template-columns: 110px 1fr 150px 150px auto;
@@ -426,10 +394,60 @@ onMounted(async () => {
   .material-row-labels { display: none; }
 }
 
+/* Image edit grid */
+.img-edit-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.img-edit-thumb {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-base);
+  overflow: visible;
+  flex-shrink: 0;
+}
+.img-edit-thumb img {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: var(--radius-base);
+  display: block;
+  border: 1px solid var(--color-border);
+}
+.img-edit-del {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 1;
+}
+
+/* Paste zone */
+.paste-zone {
+  width: 100%;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  padding: 14px 12px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-standard);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--color-text-tertiary);
+}
+.paste-zone.active, .paste-zone:focus {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Mobile cards */
 .style-mobile-cards { display: none; flex-direction: column; gap: 10px; }
 .style-card { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-surface); }
-.style-card-img { width: 56px; height: 56px; border-radius: 6px; flex-shrink: 0; object-fit: cover; }
-.style-card-no-img { background: var(--color-bg-subtle); display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 11px; }
+.style-card-img-wrap { flex-shrink: 0; width: 56px; height: 56px; }
+.style-card-no-img { width: 56px; height: 56px; border-radius: 6px; background: var(--color-bg-subtle); display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 11px; }
 .style-card-body { flex: 1; min-width: 0; }
 .style-card-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
 .style-card-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }

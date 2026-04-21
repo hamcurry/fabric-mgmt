@@ -65,27 +65,14 @@
             </div>
 
             <el-table class="fabric-desktop-table" :data="cat2.fabrics" size="small" border style="margin-left:16px">
-              <el-table-column width="56">
+              <el-table-column width="70">
                 <template #default="{ row }">
-                  <el-tooltip
-                    v-if="row.image_base64"
-                    effect="light"
-                    placement="right"
-                    :show-after="300"
-                    :hide-after="0"
-                    popper-class="img-hover-popper"
-                  >
-                    <template #content>
-                      <img :src="row.image_base64" style="max-width:300px;max-height:300px;object-fit:contain;display:block" />
-                    </template>
-                    <el-image
-                      :src="row.image_base64"
-                      fit="cover"
-                      style="width:44px;height:44px;border-radius:6px;display:block;cursor:zoom-in"
-                      :preview-src-list="[row.image_base64]"
-                      preview-teleported
-                    />
-                  </el-tooltip>
+                  <ImageStrip
+                    v-if="(row.images||[]).length"
+                    :images="row.images"
+                    :size="44"
+                    :max-visible="1"
+                  />
                   <div v-else style="width:44px;height:44px;border-radius:6px;background:var(--color-bg-subtle);display:flex;align-items:center;justify-content:center">
                     <el-icon style="color:#ccc"><Picture /></el-icon>
                   </div>
@@ -130,28 +117,11 @@
             <!-- Mobile cards -->
             <div class="fabric-mobile-cards">
               <div v-for="row in cat2.fabrics" :key="row.id" class="fabric-card">
-                <el-tooltip
-                  v-if="row.image_base64"
-                  effect="light"
-                  placement="right"
-                  :show-after="300"
-                  :hide-after="0"
-                  popper-class="img-hover-popper"
-                >
-                  <template #content>
-                    <img :src="row.image_base64" style="max-width:280px;max-height:280px;object-fit:contain;display:block" />
-                  </template>
-                  <el-image
-                    :src="row.image_base64"
-                    fit="cover"
-                    class="fabric-thumb"
-                    style="cursor:zoom-in"
-                    :preview-src-list="[row.image_base64]"
-                    preview-teleported
-                  />
-                </el-tooltip>
-                <div v-else class="fabric-thumb fabric-thumb-empty">
-                  <el-icon style="color:#ddd"><Picture /></el-icon>
+                <div class="fabric-thumb-wrap">
+                  <ImageStrip v-if="(row.images||[]).length" :images="row.images" :size="48" :max-visible="1" />
+                  <div v-else class="fabric-thumb fabric-thumb-empty">
+                    <el-icon style="color:#ddd"><Picture /></el-icon>
+                  </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
                   <el-tag :type="row.is_alert ? 'danger' : 'success'" style="flex-shrink:0">
@@ -221,11 +191,17 @@
           <el-input-number v-model="fabricForm.alert_threshold" :min="0" :precision="2" style="width:100%" />
         </el-form-item>
 
-        <!-- Fabric image -->
+        <!-- Fabric images -->
         <el-form-item label="面料图片">
-          <input ref="fabricImageInput" type="file" accept="image/*" style="display:none" @change="handleFabricImage" />
+          <input ref="fabricImageInput" type="file" accept="image/*" multiple style="display:none" @change="handleFabricImage" />
           <input ref="fabricCameraInput" type="file" accept="image/*" capture="environment" style="display:none" @change="handleFabricImage" />
           <div style="width:100%">
+            <div v-if="fabricForm.images.length" class="img-edit-grid">
+              <div v-for="(src, i) in fabricForm.images" :key="i" class="img-edit-thumb">
+                <img :src="src" />
+                <el-button size="small" type="danger" circle icon="Close" class="img-edit-del" @click.stop="fabricForm.images.splice(i,1)" />
+              </div>
+            </div>
             <div
               ref="fabricPasteZone"
               tabindex="0"
@@ -236,18 +212,8 @@
               @blur="pasteActive=false"
               @paste="handleFabricPaste"
             >
-              <div v-if="!fabricForm.image_base64" style="text-align:center;color:var(--color-text-tertiary);padding:8px 0">
-                <el-icon style="font-size:22px"><Picture /></el-icon>
-                <div style="font-size:12px;margin-top:4px">点击后可粘贴截图</div>
-              </div>
-              <div v-else style="position:relative;display:inline-block">
-                <img :src="fabricForm.image_base64" style="max-height:120px;max-width:100%;border-radius:4px" />
-                <el-button
-                  size="small" type="danger" circle icon="Close"
-                  style="position:absolute;top:-8px;right:-8px"
-                  @click.stop="fabricForm.image_base64=''"
-                />
-              </div>
+              <el-icon style="font-size:22px"><Picture /></el-icon>
+              <div style="font-size:12px;margin-top:4px">{{ fabricForm.images.length ? '继续粘贴可添加更多图片' : '点击后可粘贴截图' }}</div>
             </div>
             <div style="display:flex;gap:8px;margin-top:6px">
               <el-button size="small" icon="Camera" @click="fabricCameraInput.click()">拍照</el-button>
@@ -314,6 +280,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Picture } from '@element-plus/icons-vue'
 import { auth } from '../stores/auth'
 import { fabricsApi, categoriesApi } from '../api'
+import { compressFile, compressBlob } from '../utils/image'
+import ImageStrip from '../components/ImageStrip.vue'
 
 const { t } = useI18n()
 
@@ -335,7 +303,7 @@ const searchQuery = ref('')
 
 const defaultFabricForm = () => ({
   id: null, cat1_id: null, cat2_id: null, color: '', unit: '米',
-  current_stock: 0, alert_threshold: 20, image_base64: ''
+  current_stock: 0, alert_threshold: 20, images: []
 })
 const fabricForm = ref(defaultFabricForm())
 const fabricRules = computed(() => ({
@@ -387,38 +355,22 @@ const loadCatTree = async () => {
 
 const onCat1Change = () => { fabricForm.value.cat2_id = null }
 
-const handleFabricImage = (e) => {
-  const file = e.target.files?.[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = (ev) => {
-    const img = new Image()
-    img.onload = () => {
-      const MAX = 1200
-      let w = img.naturalWidth, h = img.naturalHeight
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round(h * MAX / w); w = MAX }
-        else { w = Math.round(w * MAX / h); h = MAX }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width = w; canvas.height = h
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-      fabricForm.value.image_base64 = canvas.toDataURL('image/jpeg', 0.82)
-    }
-    img.src = ev.target.result
+const handleFabricImage = async (e) => {
+  const files = Array.from(e.target.files || [])
+  for (const file of files) {
+    const dataUrl = await compressFile(file)
+    fabricForm.value.images.push(dataUrl)
   }
-  reader.readAsDataURL(file)
   e.target.value = ''
 }
 
-const handleFabricPaste = (e) => {
+const handleFabricPaste = async (e) => {
   const items = e.clipboardData?.items || []
   for (const item of items) {
     if (item.type.startsWith('image/')) {
       const blob = item.getAsFile()
-      const reader = new FileReader()
-      reader.onload = (ev) => { fabricForm.value.image_base64 = ev.target.result }
-      reader.readAsDataURL(blob)
+      const dataUrl = await compressBlob(blob)
+      fabricForm.value.images.push(dataUrl)
       break
     }
   }
@@ -434,7 +386,7 @@ const openFabricDialog = (row = null, cat1_id = null, cat2_id = null) => {
       unit: row.unit,
       current_stock: row.current_stock,
       alert_threshold: row.alert_threshold,
-      image_base64: row.image_base64 || ''
+      images: row.images || (row.image_base64 ? [row.image_base64] : [])
     }
   } else {
     fabricForm.value = {
@@ -456,7 +408,7 @@ const saveFabric = async () => {
       unit: fabricForm.value.unit,
       current_stock: fabricForm.value.current_stock,
       alert_threshold: fabricForm.value.alert_threshold,
-      image_base64: fabricForm.value.image_base64
+      images: fabricForm.value.images
     }
     if (fabricForm.value.id) {
       await fabricsApi.update(fabricForm.value.id, payload)
@@ -647,17 +599,25 @@ onMounted(() => {
 .paste-zone {
   width: 100%;
   border: 2px dashed var(--color-border);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: var(--radius-base);
+  padding: 12px;
   cursor: pointer;
   outline: none;
-  transition: border-color .15s;
+  transition: border-color var(--dur-fast) var(--ease-standard);
   min-height: 60px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  color: var(--color-text-tertiary);
 }
-.paste-zone.active { border-color: var(--color-primary); }
+.paste-zone.active, .paste-zone:focus { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* Multi-image edit grid */
+.img-edit-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.img-edit-thumb { position: relative; width: 80px; height: 80px; border-radius: var(--radius-base); flex-shrink: 0; }
+.img-edit-thumb img { width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-base); display: block; border: 1px solid var(--color-border); }
+.img-edit-del { position: absolute; top: -8px; right: -8px; z-index: 1; }
 
 /* Mobile cards */
 .fabric-mobile-cards { display: none; flex-direction: column; gap: 8px; margin-left: 16px; margin-top: 4px; }
@@ -670,6 +630,7 @@ onMounted(() => {
   border-radius: 8px;
   background: var(--color-bg-surface);
 }
+.fabric-thumb-wrap { flex-shrink: 0; width: 48px; height: 48px; }
 .fabric-thumb {
   width: 48px;
   height: 48px;
@@ -678,6 +639,9 @@ onMounted(() => {
   object-fit: cover;
 }
 .fabric-thumb-empty {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
   background: var(--color-bg-subtle);
   display: flex;
   align-items: center;

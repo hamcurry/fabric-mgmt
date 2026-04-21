@@ -18,7 +18,8 @@ export default {
     reports: 'Reports', reports_desc: 'Export inventory reports to Excel',
     warehouse: 'Warehouse',
     stock: 'Warehouse', more: 'More',
-    backup: 'Backup', backup_desc: 'Backup and restore the database'
+    backup: 'Backup', backup_desc: 'Backup and restore the database',
+    admin: 'Admin', admin_desc: 'Manage users and warehouses'
   },
   common: {
     save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add',
@@ -87,7 +88,8 @@ export default {
     style_name: 'Style Name', materials: 'Fabric Usage', not_set: 'Not set',
     edit_style: 'Edit Style',
     customer_placeholder: 'Customer name (optional)',
-    paste_placeholder: 'Click here then Ctrl+V to paste screenshot',
+    paste_placeholder: 'Click here then Ctrl+V to paste — repeat to add more',
+    paste_add_more: 'Paste again to add another image',
     add_material: 'Add Fabric',
     confirm_delete: 'Delete this style?',
     val_name: 'Style name is required',

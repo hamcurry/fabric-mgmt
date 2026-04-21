@@ -49,10 +49,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="alert_threshold" :label="$t('inventory.alert_threshold')" width="90" class-name="hide-xs">
+        <el-table-column prop="alert_threshold" :label="$t('inventory.alert_threshold')" width="110" class-name="hide-xs">
           <template #default="{ row }">{{ row.alert_threshold }} {{ row.unit }}</template>
         </el-table-column>
-        <el-table-column :label="$t('common.status')" width="75" class-name="hide-xs">
+        <el-table-column :label="$t('common.status')" width="80" class-name="hide-xs">
           <template #default="{ row }">
             <el-tag :type="row.is_alert ? 'danger' : 'success'" size="small">
               {{ row.is_alert ? $t('common.alert') : $t('common.normal') }}
@@ -78,7 +78,7 @@
       <div v-loading="historyLoading">
         <el-table :data="historyLogs" size="small" border max-height="420">
           <el-table-column prop="operated_at" :label="$t('common.created_at')" width="155" />
-          <el-table-column :label="$t('common.type')" width="65">
+          <el-table-column :label="$t('common.type')" width="80">
             <template #default="{ row }">
               <el-tag :type="row.type==='in'?'success':'warning'" size="small">
                 {{ row.type==='in' ? $t('common.stock_in') : $t('common.stock_out') }}

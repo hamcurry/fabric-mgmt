@@ -58,7 +58,7 @@
 
       <el-table :data="logs" v-loading="loadingLogs" border>
         <el-table-column prop="operated_at" :label="$t('common.created_at')" width="160" />
-        <el-table-column prop="type" :label="$t('common.type')" width="70">
+        <el-table-column prop="type" :label="$t('common.type')" width="80">
           <template #default="{ row }">
             <el-tag :type="row.type === 'in' ? 'success' : 'warning'" size="small">
               {{ row.type === 'in' ? $t('common.stock_in') : $t('common.stock_out') }}

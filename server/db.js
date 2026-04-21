@@ -132,6 +132,8 @@ try { db.exec("ALTER TABLE fabrics      ADD COLUMN workspace_id INTEGER DEFAULT 
 try { db.exec("ALTER TABLE styles       ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
 try { db.exec("ALTER TABLE stock_logs   ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
 try { db.exec("ALTER TABLE calc_records ADD COLUMN workspace_id INTEGER DEFAULT 1") } catch {}
+try { db.exec("ALTER TABLE styles  ADD COLUMN images_json TEXT DEFAULT '[]'") } catch {}
+try { db.exec("ALTER TABLE fabrics ADD COLUMN images_json TEXT DEFAULT '[]'") } catch {}
 
 // 种子：默认仓库 + 初始 admin 账号（admin / admin123）
 db.prepare("INSERT OR IGNORE INTO workspaces(id, name) VALUES(1, '默认仓库')").run()

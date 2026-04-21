@@ -545,12 +545,15 @@ onMounted(() => {
 .topbar {
   height: 54px;
   flex-shrink: 0;
-  background: var(--color-bg-app);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+  box-shadow: 0 1px 0 var(--color-border-subtle), 0 2px 8px rgba(0,0,0,0.04);
   display: flex;
   align-items: center;
   padding: 0 32px;
   gap: 12px;
+  z-index: 10;
+  position: relative;
 }
 .topbar-menu-btn {
   display: none;
